@@ -41,3 +41,9 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+#Visual Studio files
+Medusa_ocl.opensdf
+Medusa_ocl.sdf
+Medusa_ocl.sln
+Medusa_ocl.v12.suo
