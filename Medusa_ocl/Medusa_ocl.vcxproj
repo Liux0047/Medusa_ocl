@@ -18,6 +18,25 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="basic.hpp" />
+    <ClInclude Include="cmdoptions.hpp" />
+    <ClInclude Include="cmdparser.hpp" />
+    <ClInclude Include="oclobject.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="basic.cpp" />
+    <ClCompile Include="cmdoptions.cpp" />
+    <ClCompile Include="cmdparser.cpp" />
+    <ClCompile Include="gemm.cpp" />
+    <ClCompile Include="oclobject.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Intel_OpenCL_Build_Rules Include="gemm.cl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Intel_OpenCL_Build_Rules>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E99F5DFC-113A-4BC3-8253-90A6AC0C9A9D}</ProjectGuid>
     <RootNamespace>Medusa_ocl</RootNamespace>
@@ -82,6 +101,9 @@
     <PostBuildEvent>
       <Command>copy "*.cl" "$(OutDir)\"</Command>
     </PostBuildEvent>
+    <Intel_OpenCL_Build_Rules>
+      <Device>1</Device>
+    </Intel_OpenCL_Build_Rules>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -99,6 +121,9 @@
     <PostBuildEvent>
       <Command>copy "*.cl" "$(OutDir)\"</Command>
     </PostBuildEvent>
+    <Intel_OpenCL_Build_Rules>
+      <Device>1</Device>
+    </Intel_OpenCL_Build_Rules>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -144,8 +169,6 @@
       <Command>copy "*.cl" "$(OutDir)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\IntelOpenCL.targets" />
