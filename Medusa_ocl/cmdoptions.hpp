@@ -26,43 +26,32 @@
 
 
 // All command-line options for GEMM sample
-class CmdParserGEMM : public CmdParserCommon
+class CmdParserMedusa : public CmdParserCommon
 {
 public:
     // For these options description, please refer to the constructor definition.
 
-    CmdOption<size_t> size;
+	CmdOption<size_t> vertex_count;
+	CmdOption<size_t> edge_count;
     CmdOption<int> iterations;
 
     CmdOption<string> arithmetic;
         CmdEnum<string> arithmetic_float;
         CmdEnum<string> arithmetic_double;
 
-    CmdOption<string> kernel;
-        CmdEnum<string> kernel_nt;
-        CmdEnum<string> kernel_nn;
-
-    CmdOption<bool> validation;
-
-    CmdOption<size_t> tile_size_M;
-    CmdOption<size_t> tile_group_M;
-
-    CmdOption<size_t> tile_size_N;
-    CmdOption<size_t> tile_group_N;
-
-    CmdOption<size_t> tile_size_K;
-
-    CmdParserGEMM (int argc, const char** argv);
+    CmdParserMedusa (int argc, const char** argv);
     virtual void parse ();
 
     // Check if all parameters have correct and consistent
     // values based on device capabilities.
+	/*
     void validateParameters (
         OpenCLBasic& oclobjects,
         OpenCLProgramOneKernel& executable,
         size_t size_of_element, // size of one element of matrix in bytes
         size_t alignment    // alignment requirements in bytes
     );
+	*/
 
 private:
 
@@ -75,6 +64,7 @@ private:
         );
     }
 
+	/*
     size_t estimateMaxMatrixSize (
         OpenCLBasic& oclobjects,
         size_t size_of_element,
@@ -86,6 +76,7 @@ private:
         const CmdOption<size_t>& tile_size,
         size_t max_group_value
     );
+	*/
 };
 
 

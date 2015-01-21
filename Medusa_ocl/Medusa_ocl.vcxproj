@@ -28,11 +28,11 @@
     <ClCompile Include="basic.cpp" />
     <ClCompile Include="cmdoptions.cpp" />
     <ClCompile Include="cmdparser.cpp" />
-    <ClCompile Include="gemm.cpp" />
+    <ClCompile Include="medusa.cpp" />
     <ClCompile Include="oclobject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="gemm.cl">
+    <Intel_OpenCL_Build_Rules Include="medusa.cl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Intel_OpenCL_Build_Rules>

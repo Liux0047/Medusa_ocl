@@ -23,6 +23,8 @@
 #include <ctime>
 #include <limits>
 #include <cmath>
+#include <time.h>
+#include <stdlib.h>
 
 #include <CL/cl.h>
 
@@ -91,11 +93,11 @@ bool checkValidity (
 }
 
 
-// The main GEMM function with all application specific
+// The main medusa function with all application specific
 // OpenCL host side code.
 template <typename T>
-void gemm (
-    CmdParserGEMM& cmdparser,
+void medusa(
+    CmdParserMedusa& cmdparser,
     OpenCLBasic& oclobjects,
     OpenCLProgramOneKernel& executable
 )
@@ -103,79 +105,33 @@ void gemm (
     // -----------------------------------------------------------------------
     // Calculating, allocating and initializing host-side memory
     // -----------------------------------------------------------------------
-
-    // Query for necessary alignment for each row
-    // Each row is aligned by requirements of OpenCL to achieve better
-    // performance in comparison to not aligned data
-    size_t rowAlignment = requiredOpenCLAlignment(oclobjects.device);
-
-    // a couple of sanity checks to ensure correctness of the further math with the returned value
-    assert(rowAlignment >= sizeof(T)); // must be
-    assert((rowAlignment & (rowAlignment - 1)) == 0); // test for power of 2
-
-    // the next call checks for various OpenCL bounds to proactively
-    // handle possible errors like out of memory
-    cmdparser.validateParameters(oclobjects, executable, sizeof(T), rowAlignment);
-
-    size_t size = cmdparser.size.getValue();
+	
+	size_t vertex_count = cmdparser.vertex_count.getValue();
 
     cout
-        << "Running gemm_" << cmdparser.kernel.getValue()
-        << " kernel with matrix size: " << size << "x" << size << "\n";
+        << "Running Medusa" 
+		<< " kernel with vertex count: " << vertex_count << "\n";
 
-    // Ensures that each matrix memory row is aligned
-    size_t stride = (size*sizeof(T) + rowAlignment - 1) & ~(rowAlignment - 1);
-    cout << "Memory row stride to ensure necessary alignment: " << stride << " bytes\n";
-    // calculate row stride in elements of T
-    stride /= sizeof(T);
-    assert(size <= stride);
 
-    if(stride/sizeof(T) > size_t(numeric_limits<cl_int>::max()))
-    {
-        throw Error(
-            "Memory row stride in elements " + to_str(stride/sizeof(T)) +
-            " cannot be represented as type int, which can be maximum " +
-            to_str(numeric_limits<cl_int>::max()) + "."
-        );
-    }
+	size_t vertex_rank_memory_size = vertex_count * sizeof(T);
+	cout << "Size of memory region for vertex rank: " << vertex_rank_memory_size << " bytes\n";
 
-    size_t matrix_memory_size = size*stride*sizeof(T);
-    cout << "Size of memory region for one matrix: " << matrix_memory_size << " bytes\n";
-
-    // Allocate aligned memory for matrices to use them in
+    // Allocate aligned memory for vertex ranks to use them in
     // buffers with CL_MEM_USE_HOST_PTR.
     // OpenCLDeviceAndHostMemory is used just for
     // convenient resource deallocation:
     // a pair of pointer and cl_mem object; cl_mem object is
     // be creater later.
-
-    size_t alignmentForPtr = zeroCopyPtrAlignment(oclobjects.device);
-    size_t alignedSize = zeroCopySizeAlignment(matrix_memory_size, oclobjects.device);
-
-    OpenCLDeviceAndHostMemory<T> matrix_A;
-    matrix_A.host = (T*)aligned_malloc(alignedSize, alignmentForPtr);
-
-    OpenCLDeviceAndHostMemory<T> matrix_B;
-    matrix_B.host = (T*)aligned_malloc(alignedSize, alignmentForPtr);
-
-    OpenCLDeviceAndHostMemory<T> matrix_C;
-    matrix_C.host = (T*)aligned_malloc(alignedSize, alignmentForPtr);
-
-    // Initialize matrices row by row.
-    for(size_t i = 0; i < size; ++i)
+	
+	T vertex_rank[vertex_count];
+	
+    // Initialize vertices
+	for (size_t i = 0; i < vertex_count; ++i)
     {
-        T* row_A = matrix_A.host + i*stride;
-        T* row_B = matrix_B.host + i*stride;
-        T* row_C = matrix_C.host + i*stride;
-
-        // Fill the rows with random values from range [0, 1]
-        fill_rand_uniform_01(row_A, size);
-        fill_rand_uniform_01(row_B, size);
-
-        // To simplify validation a bit, we initialize C matrix with all zeros.
-        // It should not affect performance, which should be identical to
-        // the general case.
-        std::fill(row_C, row_C + size, T(0));
+        // Fill the vertex with random values from range [0, 1]
+		srand(time(NULL));
+		T rank = (rand() % 100) / 100.0;
+		vertex_rank[i] = rank;
     }
 
     // -----------------------------------------------------------------------
@@ -253,15 +209,16 @@ void gemm (
     // how work is devided among work-groups and work-items.
     // -----------------------------------------------------------------------
 
-    size_t global_size[2] = {
-        size / cmdparser.tile_size_M.getValue(),
-        size / cmdparser.tile_size_N.getValue()
+    size_t global_size[1] = {
+		size / cmdparser.vertex_count.getValue()
     };
 
+	/*
     size_t local_size[2] = {
         cmdparser.tile_group_M.getValue(),
         cmdparser.tile_group_N.getValue()
     };
+	*/
 
     // theoretical number of floating point operations (addition and multiplication) for one kernel execution
     // needed for performance calculations (GFLOPS) at every iteration below
@@ -275,7 +232,7 @@ void gemm (
     // Loop with the kernel invocation
     // -----------------------------------------------------------------------
 
-    for(int i = 0; i < cmdparser.iterations.getValue(); ++i)
+    for(int i = 0; i < cmdparser.iterations.getValue(); i++)
     {
         // Here we start measuring host time for kernel execution
         double start = time_stamp();
@@ -283,12 +240,24 @@ void gemm (
         err = clEnqueueNDRangeKernel(
             oclobjects.queue,
             executable.kernel,
-            2,
+            1,
             0,
             global_size,
-            local_size,
+            NULL,
             0, 0, 0
         );
+
+		/* original 
+		err = clEnqueueNDRangeKernel(
+			oclobjects.queue,
+			executable.kernel,
+			2,
+			0,
+			global_size,
+			local_size,
+			0, 0, 0
+			);
+		*/
         SAMPLE_CHECK_ERRORS(err);
 
         err = clFinish(oclobjects.queue);
@@ -368,7 +337,7 @@ int main (int argc, const char** argv)
     try
     {
         // Define and parse command-line arguments.
-        CmdParserGEMM cmdparser(argc, argv);
+        CmdParserMedusa cmdparser(argc, argv);
         cmdparser.parse();
 
         // Immediatly exit if user wanted to see the usage information only.
@@ -385,34 +354,36 @@ int main (int argc, const char** argv)
         );
 
         // Form build options string from given parameters: macros definitions to pass into kernels
-        string build_options =
-            "-DT=" + cmdparser.arithmetic.getValue() +
-            (cmdparser.arithmetic_double.isSet() ? " -DSAMPLE_NEEDS_DOUBLE" : "") +
+		string build_options =
+			"-DT=" + cmdparser.arithmetic.getValue() +
+			(cmdparser.arithmetic_double.isSet() ? " -DSAMPLE_NEEDS_DOUBLE" : "");
+			/* +
             " -DTILE_SIZE_M=" + to_str(cmdparser.tile_size_M.getValue()) +
             " -DTILE_GROUP_M=" + to_str(cmdparser.tile_group_M.getValue()) +
             " -DTILE_SIZE_N=" + to_str(cmdparser.tile_size_N.getValue()) +
             " -DTILE_GROUP_N=" + to_str(cmdparser.tile_group_N.getValue()) +
             " -DTILE_SIZE_K=" + to_str(cmdparser.tile_size_K.getValue());
+			*/
 
         cout << "Build program options: " << inquotes(build_options) << "\n";
 
         // Build kernel
         OpenCLProgramOneKernel executable(
             oclobjects,
-            L"gemm.cl",
+            L"medusa.cl",
             "",
-            "gemm_" + cmdparser.kernel.getValue(),
+            "vertex_func",
             build_options
         );
 
-        // Call gemm with required type of elements
+        // Call medusa with required type of elements
         if(cmdparser.arithmetic_float.isSet())
         {
-            gemm<float>(cmdparser, oclobjects, executable);
+			medusa<float>(cmdparser, oclobjects, executable);
         }
         else if(cmdparser.arithmetic_double.isSet())
         {
-            gemm<double>(cmdparser, oclobjects, executable);
+			medusa<double>(cmdparser, oclobjects, executable);
         }
 
         // All resource deallocations happen in destructors of helper objects.

@@ -32,16 +32,24 @@ using namespace std;
 #pragma warning (disable : 4355)    // 'this': used in base member initializer list
 #endif
 
-CmdParserGEMM::CmdParserGEMM (int argc, const char** argv) :
+CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
     CmdParserCommon(argc, argv),
-    size(
+    vertex_count(
         *this,
-        's',
-        "size",
+        'v',
+        "vertex_count",
         "<integer>",
-        "Size of matrix in elements.",
-        3968
+        "Number of vertices.",
+        128
     ),
+	edge_count(
+		*this,
+		'e',
+		"edge_count",
+		"<integer>",
+		"Number of edges.",
+		256
+	),
     iterations(
         *this,
         'i',
@@ -62,73 +70,7 @@ CmdParserGEMM::CmdParserGEMM (int argc, const char** argv) :
         "float"
     ),
     arithmetic_float(arithmetic, "float"),
-    arithmetic_double(arithmetic, "double"),
-    kernel(
-        *this,
-        0,
-        "kernel",
-        "",
-        "Determines format of matrices involved in multiplication. "
-            "There are two supported form: nn and nt; nn is for case when "
-            "both matrices A and B are in column-major form; nt is for case "
-            "when A is in column-major form, but B is in row major format "
-            "(i.e. transposed). Matrices A and C are always in column major "
-            "format.",
-        "nn"
-    ),
-    kernel_nn(kernel, "nn"),
-    kernel_nt(kernel, "nt"),
-    validation(
-        *this,
-        0,
-        "validation",
-        "",
-        "Enables validation procedure on host (slow for big matrices).",
-        false
-    ),
-    tile_size_M(
-        *this,
-        0,
-        "tile-size-M",
-        "<integer>",
-        "Size of tile for matrix A.",
-        1
-    ),
-    tile_group_M(
-        *this,
-        0,
-        "tile-group-M",
-        "<integer>",
-        "Grouping parameter for matrix A. "
-            "Also defines work group size in 0-dimension.",
-        16
-    ),
-    tile_size_N(
-        *this,
-        0,
-        "tile-size-N",
-        "<integer>",
-        "Size of tile for matrix B.",
-        128
-    ),
-    tile_group_N(
-        *this,
-        0,
-        "tile-group-N",
-        "<integer>",
-        "Grouping parameter for matrix B. "
-            "Also defines work group size in 1-dimension.",
-        1
-    ),
-    tile_size_K(
-        *this,
-        0,
-        "tile-size-K",
-        "<integer>",
-        "Size of block in dot-product direction (applicable for "
-            "nn kernel only).",
-        8
-    )
+    arithmetic_double(arithmetic, "double")
 {
 }
 
@@ -137,7 +79,7 @@ CmdParserGEMM::CmdParserGEMM (int argc, const char** argv) :
 #endif
 
 
-void CmdParserGEMM::parse ()
+void CmdParserMedusa::parse ()
 {
     CmdParserCommon::parse();
 
@@ -164,8 +106,8 @@ void CmdParserGEMM::parse ()
     }
 }
 
-
-size_t CmdParserGEMM::estimateMaxMatrixSize (
+/*
+size_t CmdParserMedusa::estimateMaxMatrixSize (
     OpenCLBasic& oclobjects,
     size_t size_of_element,
     size_t alignment
@@ -210,7 +152,7 @@ size_t CmdParserGEMM::estimateMaxMatrixSize (
 }
 
 
-void CmdParserGEMM::validateTile (
+void CmdParserMedusa::validateTile (
     const CmdOption<size_t>& tile_group,
     const CmdOption<size_t>& tile_size,
     size_t max_group_value
@@ -247,7 +189,7 @@ void CmdParserGEMM::validateTile (
 }
 
 
-void CmdParserGEMM::validateParameters (
+void CmdParserMedusa::validateParameters (
     OpenCLBasic& oclobjects,
     OpenCLProgramOneKernel& executable,
     size_t size_of_element,
@@ -305,3 +247,4 @@ void CmdParserGEMM::validateParameters (
         "should divide matrix size without a remainder"
     );
 }
+*/
