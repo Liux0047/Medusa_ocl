@@ -43,19 +43,22 @@
 // rank_list is the list of vertex ranks in VertexArray
 // edge_list is the pointer to a list of edges
 __kernel void vertex_func (
-    global int *edge_count_list,
 	global T *rank_list,
-	global int **edge_list
+	global T *edge_msg_list,
+	global T *edge_offset_list,
 )
 {
 	int id = get_global_id(0);
-	int edge_count = edge_count_list[id];
 
 	T msg = rank_list[id]/edge_count;
 
-	for (int i = 0; i < edge_count; i++) { 
-		*(edge_list[id] + i).sendMsg(msg);
-	}
+	//broadcast to all out edges
+	//edge list stored in CAA format
+	int edge_id = id;
+	while (edge_offset_list[edge_id] != -1){ 
+		edge_msg_list[edge_id] = msg;
+		edge_id += edge_offset_list[edge_id];
+	}	
 	
 }
 

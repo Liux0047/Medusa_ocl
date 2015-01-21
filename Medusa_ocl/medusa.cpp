@@ -32,6 +32,10 @@
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
 
+//Medusa data structures
+#include "vertex.hpp"
+#include "edge.hpp"
+
 using namespace std;
 
 
@@ -107,6 +111,7 @@ void medusa(
     // -----------------------------------------------------------------------
 	
 	size_t vertex_count = cmdparser.vertex_count.getValue();
+	size_t edge_count = cmdparser.edge_count.getValue();
 
     cout
         << "Running Medusa" 
@@ -114,25 +119,71 @@ void medusa(
 
 
 	size_t vertex_rank_memory_size = vertex_count * sizeof(T);
+	size_t edge_msg_memory_size = edge_count * sizeof(T);
+	size_t edge_offset_memory_size = edge_count * sizeof(int);
 	cout << "Size of memory region for vertex rank: " << vertex_rank_memory_size << " bytes\n";
+	cout << "Size of memory region for edge message: " << edge_msg_memory_size << " bytes\n";
+	cout << "Size of memory region for edge offset: " << edge_offset_memory_size << " bytes\n";
 
     // Allocate aligned memory for vertex ranks to use them in
     // buffers with CL_MEM_USE_HOST_PTR.
-    // OpenCLDeviceAndHostMemory is used just for
-    // convenient resource deallocation:
     // a pair of pointer and cl_mem object; cl_mem object is
     // be creater later.
 	
-	T vertex_rank[vertex_count];
+
+	// Initialize vertices
+	T *vertex_rank = new T [ static_cast<int> (vertex_count)];
+
+	VertexArray<T> vertexAarry;
+	vertexAarry.vertex_rank = vertex_rank;
 	
-    // Initialize vertices
 	for (size_t i = 0; i < vertex_count; ++i)
     {
         // Fill the vertex with random values from range [0, 1]
 		srand(time(NULL));
 		T rank = (rand() % 100) / 100.0;
 		vertex_rank[i] = rank;
+		vertexAarry.vertex_index[i] = i;
     }
+
+
+	//initialize edges
+	int *head_vertex = new int [ static_cast<int> (edge_count) ];
+	int *tail_vertex = new int [ static_cast<int> (edge_count) ];
+	int *offset = new int [ static_cast<int> (edge_count)];
+	T *message = new T [ static_cast<int> (edge_count) ];
+
+	EdgeArray<T> edgeArray;
+	edgeArray.tail_vertex = tail_vertex;
+	edgeArray.offset = offset;
+	edgeArray.message = message;
+
+	int *last_edge_pos = new int [static_cast<int> (vertex_count) ];	// the position of last out edge for each vertex
+	for (size_t i = 0; i < edge_count; ++i)
+	{
+		// Fill the edge with random values from range [0, vertex_count]
+		srand(time(NULL));
+		int head = rand() % vertex_count;
+		int tail;
+		// avoids self pointing edges
+		do {
+			tail = rand() % vertex_count;
+		} while (tail == head);
+
+		//record the offset
+		if (last_edge_pos[head] != 0) {
+			offset[last_edge_pos[head]] = i - last_edge_pos[head];
+		}
+		last_edge_pos[head] = i;
+		
+	}
+
+	for (size_t i = 0; i < vertex_count; i++){
+		offset[last_edge_pos[i]] = LAST_OUT_EDGE;
+	}
+
+	delete[] last_edge_pos;
+
 
     // -----------------------------------------------------------------------
     // Allocating device-side resources for matrices
@@ -145,60 +196,43 @@ void medusa(
     // model situation when matrices are hosted by some native library that
     // uses OpenCL to accelerate calculations.
 
-    matrix_A.device = clCreateBuffer(
-        oclobjects.context,
-        CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-        matrix_memory_size,
-        matrix_A.host,
-        &err
-    );
-    SAMPLE_CHECK_ERRORS(err);
-
-    matrix_B.device = clCreateBuffer(
-        oclobjects.context,
-        CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-        matrix_memory_size,
-        matrix_B.host,
-        &err
-    );
-    SAMPLE_CHECK_ERRORS(err);
-
-    matrix_C.device = clCreateBuffer(
+    cl_mem vertex_rank_buffer = clCreateBuffer(
         oclobjects.context,
         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-        matrix_memory_size,
-        matrix_C.host,
+		vertex_rank_memory_size,
+		vertexAarry.vertex_rank,
         &err
     );
     SAMPLE_CHECK_ERRORS(err);
 
-    T alpha = rand_uniform_01<T>();
-    T beta = rand_uniform_01<T>();
-    cout << "Using alpha = " << alpha << " and beta = " << beta << "\n";
-    cl_int cl_size = static_cast<int>(size);  // kernel requires int value
-    cl_int ldabc = static_cast<int>(stride);  // kernel requires int value
+	cl_mem edge_msg_buffer = clCreateBuffer(
+		oclobjects.context,
+		CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+		edge_msg_memory_size,
+		edgeArray.message,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+
+	cl_mem edge_offset_buffer = clCreateBuffer(
+		oclobjects.context,
+		CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+		edge_offset_memory_size,
+		edgeArray.offset,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+
 
     // -----------------------------------------------------------------------
     // Setting kernel arguments
     // -----------------------------------------------------------------------
 
-    err = clSetKernelArg(executable.kernel, 0, sizeof(cl_mem), &matrix_A.device);
+	err = clSetKernelArg(executable.kernel, 0, sizeof(cl_mem), &vertex_rank_buffer);
     SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 1, sizeof(cl_int), &ldabc);
+	err = clSetKernelArg(executable.kernel, 1, sizeof(cl_int), &edge_msg_buffer);
     SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 2, sizeof(cl_mem), &matrix_B.device);
-    SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 3, sizeof(cl_int), &ldabc);
-    SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 4, sizeof(cl_mem), &matrix_C.device);
-    SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 5, sizeof(cl_int), &ldabc);
-    SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 6, sizeof(cl_int), &cl_size);
-    SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 7, sizeof(T), &alpha);
-    SAMPLE_CHECK_ERRORS(err);
-    err = clSetKernelArg(executable.kernel, 8, sizeof(T), &beta);
+	err = clSetKernelArg(executable.kernel, 2, sizeof(cl_mem), &edge_offset_buffer);
     SAMPLE_CHECK_ERRORS(err);
 
     // -----------------------------------------------------------------------
@@ -210,7 +244,7 @@ void medusa(
     // -----------------------------------------------------------------------
 
     size_t global_size[1] = {
-		size / cmdparser.vertex_count.getValue()
+		cmdparser.vertex_count.getValue()
     };
 
 	/*
@@ -220,13 +254,6 @@ void medusa(
     };
 	*/
 
-    // theoretical number of floating point operations (addition and multiplication) for one kernel execution
-    // needed for performance calculations (GFLOPS) at every iteration below
-    double flops = double(size)*size*(
-        size + // multiplications
-        size + // additions
-        2      // multiplication by alpha and beta
-    );
 
     // -----------------------------------------------------------------------
     // Loop with the kernel invocation
@@ -268,65 +295,20 @@ void medusa(
 
         double time = end - start;
         cout << "Host time: " << time << " sec.\n";
-        cout << "Host perf: " << flops/time/1e9 << " GFLOPS\n";
 
-        if(i == 0 && cmdparser.validation.getValue())
-        {
-            // Validate result for the first iteration only and
-            // only if user wants this.
-            // Please note, validation procedure cannot be run at
-            // futher iterations after the very first iteration,
-            // as the results are being accumulated in C matrix
-            // every iteration but validation procedures assumes that
-            // C initial values are all zeros.
-
-            clEnqueueMapBuffer(
-                oclobjects.queue,
-                matrix_C.device,
-                CL_TRUE,    // blocking map
-                CL_MAP_READ,
-                0,
-                matrix_memory_size,
-                0, 0, 0,
-                &err
-            );
-            SAMPLE_CHECK_ERRORS(err);
-
-            // After map call, host-memory area for matrix C is
-            // automatically updated with the latest bits from the device
-            // So we just use it by original pointer as well as input matrices:
-            if(
-                !checkValidity(
-                    matrix_A.host,
-                    matrix_B.host,
-                    matrix_C.host,
-                    size,
-                    stride,
-                    cmdparser.kernel_nt.isSet(),    // whether B is transposed or not
-                    alpha,
-                    beta
-                )
-            )
-            {
-                throw Error("Validation procedure reported failures");
-            }
-
-            err = clEnqueueUnmapMemObject(
-                oclobjects.queue,
-                matrix_C.device,
-                matrix_C.host,
-                0, 0, 0
-            );
-            SAMPLE_CHECK_ERRORS(err);
-
-            // Finish here is only required for correct time measurment on the next iteration
-            // It does not affect correctness of calculations because you use the in-order OpenCL queue here.
-            err = clFinish(oclobjects.queue);
-            SAMPLE_CHECK_ERRORS(err);
-        }
     }
 
-    // All resources are deallocated automatically.
+    // deallocated resources
+	clReleaseMemObject(vertex_rank_buffer);
+	clReleaseMemObject(edge_msg_buffer);
+	clReleaseMemObject(edge_offset_buffer);
+
+	delete[] vertex_rank;
+	delete[] head_vertex;
+	delete[] tail_vertex;
+	delete[] offset;
+	delete[] message;
+
 }
 
 
@@ -385,6 +367,10 @@ int main (int argc, const char** argv)
         {
 			medusa<double>(cmdparser, oclobjects, executable);
         }
+
+		int exit;
+		cout << "Press any key to exit";
+		cin >> exit;
 
         // All resource deallocations happen in destructors of helper objects.
 

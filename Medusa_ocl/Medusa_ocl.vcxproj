@@ -22,7 +22,9 @@
     <ClInclude Include="basic.hpp" />
     <ClInclude Include="cmdoptions.hpp" />
     <ClInclude Include="cmdparser.hpp" />
+    <ClInclude Include="edge.hpp" />
     <ClInclude Include="oclobject.hpp" />
+    <ClInclude Include="vertex.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp" />
