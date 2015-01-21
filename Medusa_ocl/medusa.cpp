@@ -38,136 +38,50 @@
 
 using namespace std;
 
-
-// Check validity for multiplication of square matrices: Cresult == alpha*A*Btransposed(B) + beta*Cinit.
-// Samll simplification here: the procedure assumes that initial C values are all zeros,
-// so beta is not actually used.
-template <class T>
-bool checkValidity (
-    const T* A,     // left input matrix, column-major
-    const T* B,     // right input matrix, column-major or row-major depending on Btransposed argument
-    const T* C,     // output matrix, column-major
-    size_t size,    // number of column in each of the matrices
-    size_t ldabc,   // row stride: the number of T elements in one row (including optional padding)
-    bool Btransposed,
-    T alpha, T beta // coefficient to compute
-)
-{
-    cout << "Validate output..." << flush;
-
-    // Btransposed == false, lstride = 1
-    size_t lstride = Btransposed ? ldabc : 1;
-    size_t jstride = Btransposed ? 1 : ldabc;
-
-    // Estimate error tolerance for a given type T and relying on the fact
-    // that initial matrix values are from [0, 1]
-    T max_value = 1;
-    T error_tol = T(2) * alpha * max_value * max_value * T(2) * size * numeric_limits<T>::epsilon();
-
-    for(size_t i = 0; i < size; ++i)
-    {
-        for(size_t j = 0; j < size; ++j)
-        {
-            // compute golden value for c[i][j] element
-            T accum = 0;
-            for(size_t l = 0; l < size; ++l)
-            {
-                accum += A[l*ldabc + i] * B[l*lstride + j*jstride];
-            }
-
-            T golden = alpha*accum;
-
-            T absdiff = abs(C[j*ldabc+i] - golden);
-            if(absdiff > error_tol)
-            {
-                cout << " FAILED\n";
-                cerr.precision(std::numeric_limits<T>::digits10);
-                cerr << "\nVALIDATION FAILED!!!\n    reference" << "[" << i << ", " << j << "] = "
-                     << golden << ",\n    calculated" << "[" << i << ", " << j << "] = "
-                     << C[j*ldabc+i]
-                     << ",\n    absolute difference" << "[" << i << ", " << j << "] = " << absdiff << "\n"
-                     << "Further validation was stopped\n\n";
-                return false;
-            }
-        }
-    }
-
-    std::cout << " PASSED\n";
-    return true;
-}
-
 void breakPoint () {
 	int continue_key;
-	cin.clear();
 	cin.ignore(numeric_limits<streamsize>::max(), '\n');
-	cout << "Press any key to continue";
+	cout << "Press any key to continue...";
 	cin >> continue_key;
 }
 
-// The main medusa function with all application specific
-// OpenCL host side code.
+//initialize test data
 template <typename T>
-void medusa(
-    CmdParserMedusa& cmdparser,
-    OpenCLBasic& oclobjects,
-    OpenCLProgramOneKernel& executable
-)
-{
-    // -----------------------------------------------------------------------
-    // Calculating, allocating and initializing host-side memory
-    // -----------------------------------------------------------------------
-	
-	size_t vertex_count = cmdparser.vertex_count.getValue();
-	size_t edge_count = cmdparser.edge_count.getValue();
-
-    cout
-        << "Running Medusa" 
-		<< " kernel with vertex count: " << vertex_count << "\n";
-
-
-	size_t vertex_rank_memory_size = vertex_count * sizeof(T);
-	size_t vertex_edge_count_memory_size = vertex_count * sizeof(int);
-	size_t edge_msg_memory_size = edge_count * sizeof(T);
-	size_t edge_offset_memory_size = edge_count * sizeof(int);
-	cout << "Size of memory region for vertex rank: " << vertex_rank_memory_size << " bytes\n";
-	cout << "Size of memory region for edge message: " << edge_msg_memory_size << " bytes\n";
-	cout << "Size of memory region for edge offset: " << edge_offset_memory_size << " bytes\n";
-
-    // Allocate aligned memory for vertex ranks to use them in
-    // buffers with CL_MEM_USE_HOST_PTR.
-    // a pair of pointer and cl_mem object; cl_mem object is
-    // be creater later.
-	
-
+void initData(
+	size_t vertex_count,
+	size_t edge_count,
+	VertexArray<T> &vertexAarry,
+	EdgeArray<T> &edgeArray
+) {
 	// Initialize vertices
-	T *vertex_rank = new T [ static_cast<int> (vertex_count)];
-	int *vertex_edge_count = new int [ static_cast<int> (vertex_count)];
-
-	VertexArray<T> vertexAarry;
+	cout << "Initialize vertices \n";
+	T *vertex_rank = new T[static_cast<int> (vertex_count)];
+	int *vertex_edge_count = new int[static_cast<int> (vertex_count)];
+		
 	vertexAarry.vertex_rank = vertex_rank;
 	vertexAarry.edge_count = vertex_edge_count;
-	
+
 	for (size_t i = 0; i < vertex_count; ++i)
-    {
-        // Fill the vertex with random values from range [0, 1]
+	{
+		// Fill the vertex with random values from range [0, 1]
 		srand(time(NULL));
 		T rank = (rand() % 100) / 100.0;
 		vertex_rank[i] = rank;
-    }
+	}
 
 
 	//initialize edges
-	int *head_vertex = new int [ static_cast<int> (edge_count) ];
-	int *tail_vertex = new int [ static_cast<int> (edge_count) ];
-	int *offset = new int [ static_cast<int> (edge_count)];
-	T *message = new T [ static_cast<int> (edge_count) ];
+	int *head_vertex = new int[static_cast<int> (edge_count)];
+	int *tail_vertex = new int[static_cast<int> (edge_count)];
+	int *offset = new int[static_cast<int> (edge_count)];
+	T *message = new T[static_cast<int> (edge_count)];
 
-	EdgeArray<T> edgeArray;
+	
 	edgeArray.tail_vertex = tail_vertex;
 	edgeArray.offset = offset;
 	edgeArray.message = message;
 
-	int *last_edge_pos = new int [static_cast<int> (vertex_count) ];	// the position of last out edge for each vertex
+	int *last_edge_pos = new int[static_cast<int> (vertex_count)];	// the position of last out edge for each vertex
 	//initialize last edge position array
 	for (size_t i = 0; i < vertex_count; i++) {
 		last_edge_pos[i] = 0;
@@ -193,7 +107,7 @@ void medusa(
 			offset[last_edge_pos[head]] = i - last_edge_pos[head];
 		}
 		last_edge_pos[head] = i;
-		
+
 	}
 
 	for (size_t i = 0; i < vertex_count; i++){
@@ -202,10 +116,51 @@ void medusa(
 
 	delete[] last_edge_pos;
 
+}
 
+// The main medusa function with all application specific
+// OpenCL host side code.
+template <typename T>
+void medusa(
+    CmdParserMedusa& cmdparser,
+    OpenCLBasic& oclobjects,
+    OpenCLProgramOneKernel& sendMsgKernel,
+	OpenCLProgramOneKernel& combineKernel,
+	size_t vertex_count,
+	size_t edge_count,
+	VertexArray<T> &vertexAarry,
+	EdgeArray<T> &edgeArray
+)
+{
     // -----------------------------------------------------------------------
-    // Allocating device-side resources for matrices
+    // Calculating, allocating and initializing host-side memory
     // -----------------------------------------------------------------------
+	
+    cout
+        << "Running Medusa" 
+		<< " kernel with vertex count: " << vertex_count << "\n";
+
+
+	size_t vertex_rank_memory_size = vertex_count * sizeof(T);
+	size_t vertex_edge_count_memory_size = vertex_count * sizeof(int);
+	size_t edge_msg_memory_size = edge_count * sizeof(T);
+	size_t edge_offset_memory_size = edge_count * sizeof(int);
+	size_t tail_vertex_memory_size = edge_count * sizeof(int);
+	cout << "Size of memory region for vertex rank: " << vertex_rank_memory_size << " bytes\n";
+	cout << "Size of memory region for edge message: " << edge_msg_memory_size << " bytes\n";
+	cout << "Size of memory region for edge offset: " << edge_offset_memory_size << " bytes\n";
+
+    // Allocate aligned memory for vertex ranks to use them in
+    // buffers with CL_MEM_USE_HOST_PTR.
+    // a pair of pointer and cl_mem object; cl_mem object is
+    // be creater later.
+	
+
+	
+    // -----------------------------------------------------------------------
+    // Allocating device-side resources
+    // -----------------------------------------------------------------------
+	cout << "Allocating device-side resources \n";
 
     cl_int err = 0; // OpenCL error code
 
@@ -249,20 +204,44 @@ void medusa(
 		&err
 		);
 	SAMPLE_CHECK_ERRORS(err);
+	
+	cl_mem tail_vertex_buffer = clCreateBuffer(
+		oclobjects.context,
+		CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+		tail_vertex_memory_size,
+		edgeArray.tail_vertex,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+	
 
 
     // -----------------------------------------------------------------------
-    // Setting kernel arguments
+    // Setting kernel arguments for sendMsg
     // -----------------------------------------------------------------------
 
-	err = clSetKernelArg(executable.kernel, 0, sizeof(cl_mem), &vertex_rank_buffer);
+	err = clSetKernelArg(sendMsgKernel.kernel, 0, sizeof(cl_mem), &vertex_rank_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(executable.kernel, 1, sizeof(cl_mem), &vertex_edge_count_buffer);
+	err = clSetKernelArg(sendMsgKernel.kernel, 1, sizeof(cl_mem), &vertex_edge_count_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(executable.kernel, 2, sizeof(cl_mem), &edge_msg_buffer);
+	err = clSetKernelArg(sendMsgKernel.kernel, 2, sizeof(cl_mem), &edge_msg_buffer);
     SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(executable.kernel, 3, sizeof(cl_mem), &edge_offset_buffer);
+	err = clSetKernelArg(sendMsgKernel.kernel, 3, sizeof(cl_mem), &edge_offset_buffer);
     SAMPLE_CHECK_ERRORS(err);
+
+
+	// -----------------------------------------------------------------------
+	// Setting kernel arguments for combine
+	// -----------------------------------------------------------------------
+
+	err = clSetKernelArg(combineKernel.kernel, 0, sizeof(cl_mem), &vertex_rank_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(combineKernel.kernel, 1, sizeof(cl_mem), &tail_vertex_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(combineKernel.kernel, 2, sizeof(cl_mem), &edge_msg_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(combineKernel.kernel, 3, sizeof(cl_mem), &edge_offset_buffer);
+	SAMPLE_CHECK_ERRORS(err);
 
     // -----------------------------------------------------------------------
     // Define ndrange iteration space: global and local sizes based on
@@ -275,14 +254,7 @@ void medusa(
     size_t global_size[1] = {
 		cmdparser.vertex_count.getValue()
     };
-
-	/*
-    size_t local_size[2] = {
-        cmdparser.tile_group_M.getValue(),
-        cmdparser.tile_group_N.getValue()
-    };
-	*/
-
+	
 
     // -----------------------------------------------------------------------
     // Loop with the kernel invocation
@@ -293,9 +265,10 @@ void medusa(
         // Here we start measuring host time for kernel execution
         double start = time_stamp();
 
+		cout << "Invoking kernel \n";
         err = clEnqueueNDRangeKernel(
             oclobjects.queue,
-            executable.kernel,
+            sendMsgKernel.kernel,
             1,
             0,
             global_size,
@@ -303,21 +276,21 @@ void medusa(
             0, 0, 0
         );
 
-		/* original 
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
-			executable.kernel,
-			2,
+			combineKernel.kernel,
+			1,
 			0,
 			global_size,
-			local_size,
+			NULL,
 			0, 0, 0
-			);
-		*/
+		);
+
         SAMPLE_CHECK_ERRORS(err);
 
         err = clFinish(oclobjects.queue);
         SAMPLE_CHECK_ERRORS(err);
+
 
         // It is important to measure end host time after clFinish call
         double end = time_stamp();
@@ -332,14 +305,7 @@ void medusa(
 	clReleaseMemObject(vertex_edge_count_buffer);	
 	clReleaseMemObject(edge_msg_buffer);
 	clReleaseMemObject(edge_offset_buffer);
-
-	delete[] vertex_rank;
-	delete[] vertex_edge_count;
-	delete[] head_vertex;
-	delete[] tail_vertex;
-	delete[] offset;
-	delete[] message;
-
+	
 }
 
 
@@ -366,6 +332,7 @@ int main (int argc, const char** argv)
             cmdparser.device.getValue()
         );
 
+
         // Form build options string from given parameters: macros definitions to pass into kernels
 		string build_options =
 			"-DT=" + cmdparser.arithmetic.getValue() +
@@ -381,24 +348,43 @@ int main (int argc, const char** argv)
         cout << "Build program options: " << inquotes(build_options) << "\n";
 
         // Build kernel
-        OpenCLProgramOneKernel executable(
+		cout << "build send message kernel \n";
+        OpenCLProgramOneKernel sendMsgKernel(
             oclobjects,
             L"medusa.cl",
             "",
-            "vertex_func",
+            "send_msg",
             build_options
         );
 
-		
+		cout << "build combine message kernel \n";
+		OpenCLProgramOneKernel combineKernel(
+			oclobjects,
+			L"medusa.cl",
+			"",
+			"combine",
+			build_options
+			);
 
+
+		size_t vertex_count = cmdparser.vertex_count.getValue();
+		size_t edge_count = cmdparser.edge_count.getValue();
+
+	
         // Call medusa with required type of elements
         if(cmdparser.arithmetic_float.isSet())
         {
-			medusa<float>(cmdparser, oclobjects, executable);
+			VertexArray<float> vertexAarry;
+			EdgeArray<float> edgeArray;
+			initData(vertex_count, edge_count, vertexAarry, edgeArray);
+			medusa<float>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
         }
         else if(cmdparser.arithmetic_double.isSet())
         {
-			medusa<double>(cmdparser, oclobjects, executable);
+			VertexArray<double> vertexAarry;
+			EdgeArray<double> edgeArray;
+			initData(vertex_count, edge_count, vertexAarry, edgeArray);
+			medusa<double>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
         }
 
 		breakPoint();
