@@ -30,10 +30,6 @@
     - TILE_SIZE_N -- the number of elements of B processed in one WI
     - TILE_GROUP_N -- group/tile size along matrix B (NDRange dimension 1)
     - TILE_SIZE_K -- size of a tile along dot-product dimension
-
-    There are two kernels: gemm_nt and gemm_nn; the difference is in B matrix format.
-    Letters n and t are for column-major (non-transposed) and row-major matrix format
-    (transposed) correspondingly.
 */
 
 
@@ -42,6 +38,28 @@
 #endif
 
 
+// vertex function
+// edge_count_list is the list of edge counts in VertexArray
+// rank_list is the list of vertex ranks in VertexArray
+// edge_list is the pointer to a list of edges
+__kernel void vertex_func (
+    global int *edge_count_list,
+	global T *rank_list,
+	global int **edge_list
+)
+{
+	int id = get_global_id(0);
+	int edge_count = edge_count_list[id];
+
+	T msg = rank_list[id]/edge_count;
+
+	for (int i = 0; i < edge_count; i++) { 
+		*(edge_list[id] + i).sendMsg(msg);
+	}
+	
+}
+
+/*
 // C := alpha*A*B + beta*C
 // A is in column-major form
 // B is in row-major form (transposed; this is different from gemm_nn)
@@ -144,3 +162,4 @@ kernel void gemm_nn (
             C[Ccur] = alpha*c[i*TILE_SIZE_N + j] + beta*C[Ccur];
         }
 }
+*/

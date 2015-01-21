@@ -423,7 +423,7 @@ CmdParserDeviceType::CmdParserDeviceType (int argc, const char** argv) :
         "type",
         "all | cpu | gpu | acc | default | <OpenCL constant for device type>",
         "Selects the device by type on which the OpenCL kernel is executed.",
-        "all"
+        "gpu"
     )
 {
 }

@@ -47,3 +47,7 @@ Medusa_ocl.opensdf
 Medusa_ocl.sdf
 Medusa_ocl.sln
 Medusa_ocl.v12.suo
+
+#debug
+Debug/
+Medusa_ocl/Debug/
