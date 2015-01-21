@@ -44,13 +44,14 @@
 // edge_list is the pointer to a list of edges
 __kernel void vertex_func (
 	global T *rank_list,
+	global T *edge_count,
 	global T *edge_msg_list,
-	global T *edge_offset_list,
+	global T *edge_offset_list
 )
 {
 	int id = get_global_id(0);
 
-	T msg = rank_list[id]/edge_count;
+	T msg = rank_list[id] / edge_count[id];
 
 	//broadcast to all out edges
 	//edge list stored in CAA format

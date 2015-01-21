@@ -4,7 +4,7 @@
 
 template <typename T>
 struct VertexArray {
-	int *vertex_index;
+	int *edge_count;
 	T *vertex_rank;
 };
 

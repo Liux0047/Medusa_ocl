@@ -96,6 +96,13 @@ bool checkValidity (
     return true;
 }
 
+void breakPoint () {
+	int continue_key;
+	cin.clear();
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
+	cout << "Press any key to continue";
+	cin >> continue_key;
+}
 
 // The main medusa function with all application specific
 // OpenCL host side code.
@@ -119,6 +126,7 @@ void medusa(
 
 
 	size_t vertex_rank_memory_size = vertex_count * sizeof(T);
+	size_t vertex_edge_count_memory_size = vertex_count * sizeof(int);
 	size_t edge_msg_memory_size = edge_count * sizeof(T);
 	size_t edge_offset_memory_size = edge_count * sizeof(int);
 	cout << "Size of memory region for vertex rank: " << vertex_rank_memory_size << " bytes\n";
@@ -133,9 +141,11 @@ void medusa(
 
 	// Initialize vertices
 	T *vertex_rank = new T [ static_cast<int> (vertex_count)];
+	int *vertex_edge_count = new int [ static_cast<int> (vertex_count)];
 
 	VertexArray<T> vertexAarry;
 	vertexAarry.vertex_rank = vertex_rank;
+	vertexAarry.edge_count = vertex_edge_count;
 	
 	for (size_t i = 0; i < vertex_count; ++i)
     {
@@ -143,7 +153,6 @@ void medusa(
 		srand(time(NULL));
 		T rank = (rand() % 100) / 100.0;
 		vertex_rank[i] = rank;
-		vertexAarry.vertex_index[i] = i;
     }
 
 
@@ -159,6 +168,12 @@ void medusa(
 	edgeArray.message = message;
 
 	int *last_edge_pos = new int [static_cast<int> (vertex_count) ];	// the position of last out edge for each vertex
+	//initialize last edge position array
+	for (size_t i = 0; i < vertex_count; i++) {
+		last_edge_pos[i] = 0;
+	}
+
+	// initialize edge data
 	for (size_t i = 0; i < edge_count; ++i)
 	{
 		// Fill the edge with random values from range [0, vertex_count]
@@ -169,6 +184,9 @@ void medusa(
 		do {
 			tail = rand() % vertex_count;
 		} while (tail == head);
+
+		//update edge_count
+		vertexAarry.edge_count[head]++;
 
 		//record the offset
 		if (last_edge_pos[head] != 0) {
@@ -205,6 +223,15 @@ void medusa(
     );
     SAMPLE_CHECK_ERRORS(err);
 
+	cl_mem vertex_edge_count_buffer = clCreateBuffer(
+		oclobjects.context,
+		CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+		vertex_edge_count_memory_size,
+		vertexAarry.edge_count,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+
 	cl_mem edge_msg_buffer = clCreateBuffer(
 		oclobjects.context,
 		CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
@@ -229,10 +256,12 @@ void medusa(
     // -----------------------------------------------------------------------
 
 	err = clSetKernelArg(executable.kernel, 0, sizeof(cl_mem), &vertex_rank_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(executable.kernel, 1, sizeof(cl_mem), &vertex_edge_count_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(executable.kernel, 2, sizeof(cl_mem), &edge_msg_buffer);
     SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(executable.kernel, 1, sizeof(cl_int), &edge_msg_buffer);
-    SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(executable.kernel, 2, sizeof(cl_mem), &edge_offset_buffer);
+	err = clSetKernelArg(executable.kernel, 3, sizeof(cl_mem), &edge_offset_buffer);
     SAMPLE_CHECK_ERRORS(err);
 
     // -----------------------------------------------------------------------
@@ -300,10 +329,12 @@ void medusa(
 
     // deallocated resources
 	clReleaseMemObject(vertex_rank_buffer);
+	clReleaseMemObject(vertex_edge_count_buffer);	
 	clReleaseMemObject(edge_msg_buffer);
 	clReleaseMemObject(edge_offset_buffer);
 
 	delete[] vertex_rank;
+	delete[] vertex_edge_count;
 	delete[] head_vertex;
 	delete[] tail_vertex;
 	delete[] offset;
@@ -358,6 +389,8 @@ int main (int argc, const char** argv)
             build_options
         );
 
+		
+
         // Call medusa with required type of elements
         if(cmdparser.arithmetic_float.isSet())
         {
@@ -368,9 +401,7 @@ int main (int argc, const char** argv)
 			medusa<double>(cmdparser, oclobjects, executable);
         }
 
-		int exit;
-		cout << "Press any key to exit";
-		cin >> exit;
+		breakPoint();
 
         // All resource deallocations happen in destructors of helper objects.
 
@@ -381,21 +412,25 @@ int main (int argc, const char** argv)
         cerr
             << "[ ERROR ] In command line: " << error.what() << "\n"
             << "Run " << argv[0] << " -h for usage info.\n";
+		breakPoint();
         return 1;
     }
     catch(const Error& error)
     {
         cerr << "[ ERROR ] Sample application specific error: " << error.what() << "\n";
+		breakPoint();
         return 1;
     }
     catch(const exception& error)
     {
         cerr << "[ ERROR ] " << error.what() << "\n";
+		breakPoint();
         return 1;
     }
     catch(...)
     {
         cerr << "[ ERROR ] Unknown/internal error happened.\n";
+		breakPoint();
         return 1;
     }
 }
