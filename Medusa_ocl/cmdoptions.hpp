@@ -35,9 +35,10 @@ public:
 	CmdOption<size_t> edge_count;
     CmdOption<int> iterations;
 
-    CmdOption<string> arithmetic;
-        CmdEnum<string> arithmetic_float;
-        CmdEnum<string> arithmetic_double;
+	CmdOption<string> arithmetic;
+		CmdEnum<string> arithmetic_int;
+        //CmdEnum<string> arithmetic_float;
+        //CmdEnum<string> arithmetic_double;
 
     CmdParserMedusa (int argc, const char** argv);
     virtual void parse ();

@@ -88,7 +88,7 @@ __kernel void combine (
 
 		// atomic add floats
 		//while ( atom_cmpxchg( mutex[ tail_vertex[edge_id] ], 0 ,1 ) );
-		rank_list[ tail_vertex[edge_id] ] += edge_msg_list[edge_id];
+		atomic_add(&rank_list[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
 		//atom_xchg ( mutex[ tail_vertex[edge_id] ], 0 );
 	}
 	

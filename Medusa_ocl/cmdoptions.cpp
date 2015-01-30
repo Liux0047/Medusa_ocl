@@ -40,7 +40,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
         "vertex_count",
         "<integer>",
         "Number of vertices.",
-		128
+		65536
     ),
 	edge_count(
 		*this,
@@ -48,7 +48,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
 		"edge_count",
 		"<integer>",
 		"Number of edges.",
-		256
+		65536
 	),
     iterations(
         *this,
@@ -67,10 +67,11 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
         "arithmetic",
         "",
         "Type of elements and all calculations.",
-        "float"
+        "int"
     ),
-    arithmetic_float(arithmetic, "float"),
-    arithmetic_double(arithmetic, "double")
+	arithmetic_int(arithmetic, "int")
+    //arithmetic_float(arithmetic, "float"),
+    //arithmetic_double(arithmetic, "double")
 {
 }
 
@@ -89,21 +90,12 @@ void CmdParserMedusa::parse ()
     // further specialization on what OpenCL objects and their
     // capabilities are.
 
-    if(arithmetic_float.isSet() && arithmetic_double.isSet())
-    {
-        throw CmdParser::Error(
-            "Both float and double are chosen. "
-            "Should be only one of them."
-        );
-    }
-
-    if(!arithmetic_float.isSet() && !arithmetic_double.isSet())
-    {
-        throw CmdParser::Error(
-            "Neither float nor double are chosen. "
-            "One of them should be chosen."
-        );
-    }
+	if (!arithmetic_int.isSet()){
+		throw CmdParser::Error(
+			"int datatype not chosen. "
+			);
+	}
+    
 }
 
 /*

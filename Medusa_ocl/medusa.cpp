@@ -335,9 +335,9 @@ int main (int argc, const char** argv)
 
         // Form build options string from given parameters: macros definitions to pass into kernels
 		string build_options =
-			"-DT=" + cmdparser.arithmetic.getValue() +
-			(cmdparser.arithmetic_double.isSet() ? " -DSAMPLE_NEEDS_DOUBLE" : "");
-			/* +
+			"-DT=" + cmdparser.arithmetic.getValue();
+			/*  +
+			(cmdparser.arithmetic_double.isSet() ? " -DSAMPLE_NEEDS_DOUBLE" : "") +
             " -DTILE_SIZE_M=" + to_str(cmdparser.tile_size_M.getValue()) +
             " -DTILE_GROUP_M=" + to_str(cmdparser.tile_group_M.getValue()) +
             " -DTILE_SIZE_N=" + to_str(cmdparser.tile_size_N.getValue()) +
@@ -372,19 +372,12 @@ int main (int argc, const char** argv)
 
 	
         // Call medusa with required type of elements
-        if(cmdparser.arithmetic_float.isSet())
+        if(cmdparser.arithmetic_int.isSet())
         {
-			VertexArray<float> vertexAarry;
-			EdgeArray<float> edgeArray;
+			VertexArray<int> vertexAarry;
+			EdgeArray<int> edgeArray;
 			initData(vertex_count, edge_count, vertexAarry, edgeArray);
-			medusa<float>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
-        }
-        else if(cmdparser.arithmetic_double.isSet())
-        {
-			VertexArray<double> vertexAarry;
-			EdgeArray<double> edgeArray;
-			initData(vertex_count, edge_count, vertexAarry, edgeArray);
-			medusa<double>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
+			medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
         }
 
 		breakPoint();
