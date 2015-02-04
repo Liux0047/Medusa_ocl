@@ -22,10 +22,12 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <vector>
 #include <limits>
 #include <cmath>
 #include <time.h>
 #include <stdlib.h>
+
 
 #include <CL/cl.h>
 
@@ -39,10 +41,12 @@
 
 using namespace std;
 
+int edgeCount = 0;
+
 void breakPoint () {
 	int continue_key;
 	cin.ignore(numeric_limits<streamsize>::max(), '\n');
-	cout << "Press any key to continue...";
+	cout << "Press any key to continue Medusa...";
 	cin >> continue_key;
 }
 
@@ -51,10 +55,11 @@ void breakPoint () {
 template <typename T>
 void constructData(
 	int vertexCount,
+	int &edgeCount,
 	VertexArray<T> &vertexAarry,
 	EdgeArray<T> &edgeArray
 ) {
-	ifstream inDataFile("data\small-sample.txt", ios::in);
+	ifstream inDataFile("data/small-sample.txt", ios::in);
 
 	if (!inDataFile) {
 		cerr << "File could not be opened" << endl;
@@ -63,17 +68,116 @@ void constructData(
 
 	// first line is the vertex rank
 	cout << "Initialize vertices \n";
-	T *vertex_rank = new T[static_cast<int> (vertex_count)];
+	T *vertex_rank = new T[static_cast<int> (vertexCount)];
 	for (int i = 0; i < vertexCount; i++) {
 		inDataFile >> vertex_rank[i];
 	}
+	vertexAarry.vertex_rank = vertex_rank;
 
-	int *vertex_edge_count = new int[static_cast<int> (vertex_count)];
+	//determine the edge counts
+	long edgeStartLocation = inDataFile.tellg();
+	
+	int hasEdge;
+	while (!inDataFile.eof()) {
+		inDataFile >> hasEdge;
+		// 1 means edge exits; 0 otherwise
+		if (hasEdge == 1) {
+			edgeCount += hasEdge;
+		}
+	}
+
+	//rewind to edge starting position
+	inDataFile.clear();
+	inDataFile.seekg(edgeStartLocation);
+
+	//dynamic allocate a 2D array
+	int** edge = new int*[vertexCount];
+	for (int i = 0; i < vertexCount; ++i) {
+		edge[i] = new int[vertexCount];
+	}
+
+	
+	//read into the edge [][] array 
+	int rowNum = 0;		//row number is the head vertex
+	int colNum = 0;		//col number is the tail vertex
+	while (inDataFile >> hasEdge && rowNum < vertexCount) {	//read till EOF and close the file
+		edge[rowNum][colNum] = hasEdge;
+		colNum++;
+		if (colNum % vertexCount == 0) {	//next line
+			colNum = 0;
+			rowNum++;
+		}
+	}
+		
+	//initialize edges
+	int *head_vertex = new int[static_cast<int> (edgeCount)];
+	int *tail_vertex = new int[static_cast<int> (edgeCount)];
+	int *offset = new int[static_cast<int> (edgeCount)];
+	T *message = new T[static_cast<int> (edgeCount)];
+	int *vertex_edge_count = new int[static_cast<int> (vertexCount)];
+
+	edgeArray.tail_vertex = tail_vertex;
+	edgeArray.offset = offset;
+	edgeArray.message = message;
+	vertexAarry.edge_count = vertex_edge_count;
 
 
+	int *last_edge_pos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
+	//initialize last edge position array
+	for (size_t i = 0; i < vertexCount; i++) {
+		last_edge_pos[i] = 0;
+	}
+
+	// construct CAA in column major foramt
+	int numEdgesAdded = 0;
+	for (int col = 0; col < vertexCount; col++) {
+		for (int row = 0; row < vertexCount; row++){
+			// 1 means edge exits; 0 otherwise
+			if (edge[row][col] == 1) {
+				//update edge_count
+				vertexAarry.edge_count[row]++;
+				//record the tail vertex
+				(edgeArray.tail_vertex)[numEdgesAdded] = col;
+				//record the offset
+				if (last_edge_pos[row] != 0) {
+					edgeArray.offset[last_edge_pos[row]] = numEdgesAdded - last_edge_pos[row];
+				}
+				last_edge_pos[row] = numEdgesAdded;
+				numEdgesAdded++;
+			}
+		}
+	}
+	for (int i = 0; i < vertexCount; i++){
+		edgeArray.offset[last_edge_pos[i]] = LAST_OUT_EDGE;
+	}
+	
+	//cleaning up
+	delete[] last_edge_pos;
+	for (int i = 0; i < vertexCount; ++i) {
+		delete[] edge[i];
+	}
+	delete[] edge;
+
+	//output for test
+	cout << "Vertex rank:" << endl;
+	for (int i = 0; i < vertexCount; i++) {
+		cout << vertexAarry.vertex_rank[i] << " ";
+	}
+	cout << endl;
+	cout << "Tail vertex:" << endl;
+	for (int i = 0; i < edgeCount; i++) {
+		cout << edgeArray.tail_vertex[i] << " ";
+	}
+	cout << endl;
+	cout << "Offset:" << endl;
+	for (int i = 0; i < edgeCount; i++) {
+		cout << edgeArray.offset[i] << " ";
+	}
+	breakPoint();
+	
 }
 
-//initialize test data
+//initialize random test data
 template <typename T>
 void initData(
 	size_t vertex_count,
@@ -404,8 +508,9 @@ int main (int argc, const char** argv)
         {
 			VertexArray<int> vertexAarry;
 			EdgeArray<int> edgeArray;
-			initData(vertex_count, edge_count, vertexAarry, edgeArray);
-			medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
+			constructData(5, edgeCount, vertexAarry, edgeArray);
+			//initData(vertex_count, edge_count, vertexAarry, edgeArray);
+			//medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
         }
 
 		breakPoint();
