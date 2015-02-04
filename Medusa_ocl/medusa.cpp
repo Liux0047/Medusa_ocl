@@ -20,6 +20,7 @@
 
 
 #include <iostream>
+#include <fstream>
 #include <ctime>
 #include <limits>
 #include <cmath>
@@ -43,6 +44,33 @@ void breakPoint () {
 	cin.ignore(numeric_limits<streamsize>::max(), '\n');
 	cout << "Press any key to continue...";
 	cin >> continue_key;
+}
+
+
+//construct the data from the file
+template <typename T>
+void constructData(
+	int vertexCount,
+	VertexArray<T> &vertexAarry,
+	EdgeArray<T> &edgeArray
+) {
+	ifstream inDataFile("data\small-sample.txt", ios::in);
+
+	if (!inDataFile) {
+		cerr << "File could not be opened" << endl;
+		exit(1);
+	}
+
+	// first line is the vertex rank
+	cout << "Initialize vertices \n";
+	T *vertex_rank = new T[static_cast<int> (vertex_count)];
+	for (int i = 0; i < vertexCount; i++) {
+		inDataFile >> vertex_rank[i];
+	}
+
+	int *vertex_edge_count = new int[static_cast<int> (vertex_count)];
+
+
 }
 
 //initialize test data
