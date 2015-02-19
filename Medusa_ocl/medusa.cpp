@@ -41,6 +41,7 @@
 
 using namespace std;
 
+//count the number of edges
 int edgeCount = 0;
 
 void breakPoint () {
@@ -59,6 +60,7 @@ void constructData(
 	VertexArray<T> &vertexAarry,
 	EdgeArray<T> &edgeArray
 ) {
+
 	ifstream inDataFile("data/small-sample.txt", ios::in);
 
 	if (!inDataFile) {
@@ -116,43 +118,62 @@ void constructData(
 	T *message = new T[static_cast<int> (edgeCount)];
 	int *vertex_edge_count = new int[static_cast<int> (vertexCount)];
 
+	for (size_t i = 0; i < edgeCount; i++) {
+		head_vertex[i] = 0;
+		tail_vertex[i] = 0;
+		offset[i] = 0;	
+	}
+
+	for (size_t i = 0; i < vertexCount; i++) {
+		vertex_edge_count[i] = 0;
+	}
+
 	edgeArray.tail_vertex = tail_vertex;
 	edgeArray.offset = offset;
 	edgeArray.message = message;
 	vertexAarry.edge_count = vertex_edge_count;
 
 
-	int *last_edge_pos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
+	int *lastEdgePos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
+	int *currentCol = new int[static_cast<int> (vertexCount)];	// the position of current col number for each vertex in the input matrix
 	//initialize last edge position array
 	for (size_t i = 0; i < vertexCount; i++) {
-		last_edge_pos[i] = 0;
+		lastEdgePos[i] = LAST_OUT_EDGE;
+		currentCol[i] = 0;
 	}
 
 	// construct CAA in column major foramt
 	int numEdgesAdded = 0;
-	for (int col = 0; col < vertexCount; col++) {
-		for (int row = 0; row < vertexCount; row++){
-			// 1 means edge exits; 0 otherwise
-			if (edge[row][col] == 1) {
-				//update edge_count
+	bool halt = false;
+	while (!halt) {
+		halt = true;
+		for (int row = 0; row < vertexCount; row++){			
+			while (currentCol[row] < (static_cast<int> (vertexCount)) && edge[row][currentCol[row]] != 1 ) {
+				currentCol[row]++;
+			}			
+
+			if (currentCol[row] < (static_cast<int> (vertexCount)) ) {
+				halt = false;
 				vertexAarry.edge_count[row]++;
 				//record the tail vertex
-				(edgeArray.tail_vertex)[numEdgesAdded] = col;
+				(edgeArray.tail_vertex)[numEdgesAdded] = currentCol[row];
 				//record the offset
-				if (last_edge_pos[row] != 0) {
-					edgeArray.offset[last_edge_pos[row]] = numEdgesAdded - last_edge_pos[row];
+				if (lastEdgePos[row] != LAST_OUT_EDGE) {
+					edgeArray.offset[lastEdgePos[row]] = numEdgesAdded - lastEdgePos[row];
 				}
-				last_edge_pos[row] = numEdgesAdded;
+				lastEdgePos[row] = numEdgesAdded;
 				numEdgesAdded++;
 			}
+			currentCol[row]++;
 		}
 	}
+	
 	for (int i = 0; i < vertexCount; i++){
-		edgeArray.offset[last_edge_pos[i]] = LAST_OUT_EDGE;
+		edgeArray.offset[lastEdgePos[i]] = LAST_OUT_EDGE;
 	}
 	
 	//cleaning up
-	delete[] last_edge_pos;
+	delete[] lastEdgePos;
 	for (int i = 0; i < vertexCount; ++i) {
 		delete[] edge[i];
 	}
@@ -213,10 +234,10 @@ void initData(
 	edgeArray.offset = offset;
 	edgeArray.message = message;
 
-	int *last_edge_pos = new int[static_cast<int> (vertex_count)];	// the position of last out edge for each vertex
+	int *lastEdgePos = new int[static_cast<int> (vertex_count)];	// the position of last out edge for each vertex
 	//initialize last edge position array
 	for (size_t i = 0; i < vertex_count; i++) {
-		last_edge_pos[i] = 0;
+		lastEdgePos[i] = 0;
 	}
 
 	// initialize edge data
@@ -235,18 +256,18 @@ void initData(
 		vertexAarry.edge_count[head]++;
 
 		//record the offset
-		if (last_edge_pos[head] != 0) {
-			offset[last_edge_pos[head]] = i - last_edge_pos[head];
+		if (lastEdgePos[head] != 0) {
+			offset[lastEdgePos[head]] = i - lastEdgePos[head];
 		}
-		last_edge_pos[head] = i;
+		lastEdgePos[head] = i;
 
 	}
 
 	for (size_t i = 0; i < vertex_count; i++){
-		offset[last_edge_pos[i]] = LAST_OUT_EDGE;
+		offset[lastEdgePos[i]] = LAST_OUT_EDGE;
 	}
 
-	delete[] last_edge_pos;
+	delete[] lastEdgePos;
 
 }
 
@@ -508,7 +529,7 @@ int main (int argc, const char** argv)
         {
 			VertexArray<int> vertexAarry;
 			EdgeArray<int> edgeArray;
-			constructData(5, edgeCount, vertexAarry, edgeArray);
+			constructData(4, edgeCount, vertexAarry, edgeArray);
 			//initData(vertex_count, edge_count, vertexAarry, edgeArray);
 			//medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edge_count, vertexAarry, edgeArray);
         }
