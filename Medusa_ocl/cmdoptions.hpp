@@ -32,7 +32,6 @@ public:
     // For these options description, please refer to the constructor definition.
 
 	CmdOption<size_t> vertex_count;
-	CmdOption<size_t> edge_count;
     CmdOption<int> iterations;
 
 	CmdOption<string> arithmetic;

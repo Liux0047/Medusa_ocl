@@ -40,16 +40,8 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
         "vertex_count",
         "<integer>",
         "Number of vertices.",
-		65536
+		4
     ),
-	edge_count(
-		*this,
-		'e',
-		"edge_count",
-		"<integer>",
-		"Number of edges.",
-		65536
-	),
     iterations(
         *this,
         'i',
@@ -59,7 +51,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
             "performance information will be printed. "
             "Zero is allowed: in this case no kernel invocation "
             " is performed but all other host stuff is created.",
-        3
+        1
     ),
     arithmetic(
         *this,

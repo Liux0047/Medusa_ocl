@@ -32,7 +32,6 @@
     - TILE_SIZE_K -- size of a tile along dot-product dimension
 */
 
-
 #ifdef SAMPLE_NEEDS_DOUBLE
     #pragma OPENCL EXTENSION cl_khr_fp64: enable
 #endif
@@ -46,22 +45,24 @@
 __kernel void send_msg (
 	global T *rank_list,
 	global int *edge_count,
-	global T *edge_msg_list,
-	global int *edge_offset_list
+	global int *edge_offset_list,
+	global T *edge_msg_list
 )
 {
 	int id = get_global_id(0);
 		
-	T msg = rank_list[id] / edge_count[id];
+	T msg = (rank_list[id] + edge_count[id]/2) / edge_count[id];	//round to nearest integer
 
-	
 	//broadcast to all out edges
-	//edge list stored in CAA format
+	//edge list stored in CAA format	
 	int edge_id = id;
-	while (edge_offset_list[edge_id] != -1){ 
+	
+	while (edge_offset_list[edge_id] != -1) { 
 		edge_msg_list[edge_id] = msg;
 		edge_id += edge_offset_list[edge_id];
-	}	
+	} 	
+	edge_msg_list[edge_id] = msg;
+	
 	
 }
 
@@ -70,27 +71,30 @@ __kernel void send_msg (
  * combine messages from edges
  */
 __kernel void combine (
-	global T *rank_list,
 	global int *tail_vertex,
 	global T *edge_msg_list,
-	global int *edge_offset_list
+	global int *edge_offset_list,
+	global T *rank_list_output
 )
 {	
+
 
 	int id = get_global_id(0);
 	
 	int edge_id = id;
 	int offset = edge_offset_list[id];
-	rank_list[ tail_vertex[edge_id] ] += edge_msg_list[edge_id];
-	while ( offset != -1 ){ 
-		offset = edge_offset_list[edge_id];
-		edge_id += offset;
+	rank_list_output[id] = 0;
+
+	 while (edge_offset_list[edge_id] != -1) { 
 
 		// atomic add floats
 		//while ( atom_cmpxchg( mutex[ tail_vertex[edge_id] ], 0 ,1 ) );
-		atomic_add(&rank_list[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
+		atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
 		//atom_xchg ( mutex[ tail_vertex[edge_id] ], 0 );
-	}
+		
+		edge_id += edge_offset_list[edge_id];
+	};
+	atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
 	
 
 	
