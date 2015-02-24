@@ -33,6 +33,15 @@
     <ClInclude Include="edge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="edge_aa.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vertex_aa.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pagerank.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp">
@@ -52,7 +61,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="medusa.cl">
+    <Intel_OpenCL_Build_Rules Include="pagerank.cl">
+      <Filter>OpenCL Files</Filter>
+    </Intel_OpenCL_Build_Rules>
+    <Intel_OpenCL_Build_Rules Include="pagerank_aa.cl">
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
   </ItemGroup>

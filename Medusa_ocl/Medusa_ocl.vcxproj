@@ -23,8 +23,11 @@
     <ClInclude Include="cmdoptions.hpp" />
     <ClInclude Include="cmdparser.hpp" />
     <ClInclude Include="edge.hpp" />
+    <ClInclude Include="edge_aa.hpp" />
     <ClInclude Include="oclobject.hpp" />
+    <ClInclude Include="pagerank.hpp" />
     <ClInclude Include="vertex.hpp" />
+    <ClInclude Include="vertex_aa.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp" />
@@ -34,7 +37,11 @@
     <ClCompile Include="oclobject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="medusa.cl">
+    <Intel_OpenCL_Build_Rules Include="pagerank.cl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Intel_OpenCL_Build_Rules>
+    <Intel_OpenCL_Build_Rules Include="pagerank_aa.cl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Intel_OpenCL_Build_Rules>
