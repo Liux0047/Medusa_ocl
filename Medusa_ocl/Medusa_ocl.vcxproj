@@ -26,6 +26,7 @@
     <ClInclude Include="edge_aa.hpp" />
     <ClInclude Include="oclobject.hpp" />
     <ClInclude Include="pagerank.hpp" />
+    <ClInclude Include="pagerank_aa.hpp" />
     <ClInclude Include="vertex.hpp" />
     <ClInclude Include="vertex_aa.hpp" />
   </ItemGroup>

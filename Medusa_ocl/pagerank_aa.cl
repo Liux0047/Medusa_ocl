@@ -45,7 +45,7 @@
 __kernel void send_msg (
 	global T *rank_list,
 	global int *edge_count,
-	global int *edge_offset_list,
+	global int *edge_start_pos,
 	global T *edge_msg_list
 )
 {
@@ -54,15 +54,12 @@ __kernel void send_msg (
 	T msg = (rank_list[id] + edge_count[id]/2) / edge_count[id];	//round to nearest integer
 
 	//broadcast to all out edges
-	//edge list stored in CAA format	
-	int edge_id = id;
-	
-	while (edge_offset_list[edge_id] != -1) { 
-		edge_msg_list[edge_id] = msg;
-		edge_id += edge_offset_list[edge_id];
-	} 	
-	edge_msg_list[edge_id] = msg;
-	
+	//edge list stored in AA format		
+	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
+		edge_msg_list[edge_start_pos[id] + edge_local_index] = msg;
+	}
+
+		
 	
 }
 
@@ -73,29 +70,20 @@ __kernel void send_msg (
 __kernel void combine (
 	global int *tail_vertex,
 	global T *edge_msg_list,
-	global int *edge_offset_list,
+	global int *edge_count,
+	global int *edge_start_pos,
 	global T *rank_list_output
 )
 {	
 
-
 	int id = get_global_id(0);
 	
-	int edge_id = id;
-	int offset = edge_offset_list[id];
 	rank_list_output[id] = 0;
 
-	 while (edge_offset_list[edge_id] != -1) { 
-
-		// atomic add floats
-		//while ( atom_cmpxchg( mutex[ tail_vertex[edge_id] ], 0 ,1 ) );
+	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
+		int edge_id = edge_start_pos[id] + edge_local_index;
 		atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
-		//atom_xchg ( mutex[ tail_vertex[edge_id] ], 0 );
-		
-		edge_id += edge_offset_list[edge_id];
-	};
-	atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
+	}
 	
-
 	
 }

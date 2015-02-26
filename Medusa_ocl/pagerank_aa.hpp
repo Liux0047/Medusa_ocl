@@ -1,19 +1,20 @@
 
-#ifndef _PAGERANK_HPP_
-#define _PAGERANK_HPP_
+#ifndef _PAGERANK_AA_HPP_
+#define _PAGERANK_AA_HPP_
 
 //Medusa data structures
-#include "vertex.hpp"
-#include "edge.hpp"
+#include "vertex_aa.hpp"
+#include "edge_aa.hpp"
 #include "cmdoptions.hpp"
+#include "oclobject.hpp"
 
 //construct the data from the file
 template <typename T>
-void constructData(
+void constructDataAA(
 	int vertexCount,
 	int &edgeCount,
-	VertexArray<T> &vertexArray,
-	EdgeArray<T> &edgeArray
+	VertexArrayAA<T> &vertexArray,
+	EdgeArrayAA<T> &edgeArray
 	) {
 
 	ifstream inDataFile("data/small-sample.txt", ios::in);
@@ -68,69 +69,39 @@ void constructData(
 
 	//initialize edges
 	int *tail_vertex = new int[static_cast<int> (edgeCount)];
-	int *offset = new int[static_cast<int> (edgeCount)];
 	T *message = new T[static_cast<int> (edgeCount)];
 	int *vertex_edge_count = new int[static_cast<int> (vertexCount)];
+	int *vertex_edge_start = new int[static_cast<int> (vertexCount)];
 
 	for (size_t i = 0; i < edgeCount; i++) {
 		tail_vertex[i] = 0;
-		offset[i] = 0;
 	}
 
 	for (size_t i = 0; i < vertexCount; i++) {
 		vertex_edge_count[i] = 0;
+		vertex_edge_start[i] = 0;
 	}
 
 	edgeArray.tail_vertex = tail_vertex;
-	edgeArray.offset = offset;
 	edgeArray.message = message;
 	vertexArray.edge_count = vertex_edge_count;
+	vertexArray.start = vertex_edge_start;
 
 
-	int *lastEdgePos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
-	int *currentCol = new int[static_cast<int> (vertexCount)];	// the position of current col number for each vertex in the input matrix
-	//initialize last edge position array
-	for (size_t i = 0; i < vertexCount; i++) {
-		lastEdgePos[i] = LAST_OUT_EDGE;
-		currentCol[i] = 0;
-	}
-
-	// construct CAA in column major foramt
-	int numEdgesAdded = 0;
-	bool halt = false;
-	while (!halt) {
-		halt = true;
-		for (int row = 0; row < vertexCount; row++){
-			while (currentCol[row] < (static_cast<int> (vertexCount)) && edge[row][currentCol[row]] != 1) {
-				currentCol[row]++;
+	//read the edges in AA format
+	int edgeCount = 0;
+	for (int row = 0; row < vertexCount; row++){
+		vertexArray.start[row] = edgeCount;
+		vertexArray.edge_count[row] = 0;
+		for (int col = 0; col < vertexCount; col++){
+			if (edge[row][col] == 1){
+				vertexArray.edge_count[row] ++;
+				edgeArray.tail_vertex[edgeCount] = col;
+				edgeCount++;
 			}
-
-			if (currentCol[row] < (static_cast<int> (vertexCount))) {
-				halt = false;
-				vertexArray.edge_count[row]++;
-				//record the tail vertex
-				(edgeArray.tail_vertex)[numEdgesAdded] = currentCol[row];
-				//record the offset
-				if (lastEdgePos[row] != LAST_OUT_EDGE) {
-					edgeArray.offset[lastEdgePos[row]] = numEdgesAdded - lastEdgePos[row];
-				}
-				lastEdgePos[row] = numEdgesAdded;
-				numEdgesAdded++;
-			}
-			currentCol[row]++;
 		}
 	}
-
-	for (int i = 0; i < vertexCount; i++){
-		edgeArray.offset[lastEdgePos[i]] = LAST_OUT_EDGE;
-	}
-
-	//cleaning up
-	delete[] lastEdgePos;
-	for (int i = 0; i < vertexCount; ++i) {
-		delete[] edge[i];
-	}
-	delete[] edge;
+	
 
 	//output for test
 	cout << "Vertex rank:" << endl;
@@ -148,13 +119,14 @@ void constructData(
 		cout << vertexArray.edge_count[i] << " ";
 	}
 	cout << endl;
-	cout << "Offset:" << endl;
-	for (int i = 0; i < edgeCount; i++) {
-		cout << edgeArray.offset[i] << " ";
+	cout << "Start position:" << endl;
+	for (int i = 0; i < vertexCount; i++) {
+		cout << vertexArray.start[i] << " ";
 	}
 	cout << endl;
 
 }
+
 
 
 // OpenCL host side code.
@@ -166,8 +138,8 @@ void medusa(
 	OpenCLProgramOneKernel& combineKernel,
 	size_t vertex_count,
 	size_t edge_count,
-	VertexArray<T> &vertexArray,
-	EdgeArray<T> &edgeArray
+	VertexArrayAA<T> &vertexArray,
+	EdgeArrayAA<T> &edgeArray
 	)
 {
 	// -----------------------------------------------------------------------
@@ -182,11 +154,10 @@ void medusa(
 	size_t vertex_rank_memory_size = vertex_count * sizeof(T);
 	size_t vertex_edge_count_memory_size = vertex_count * sizeof(int);
 	size_t edge_msg_memory_size = edge_count * sizeof(T);
-	size_t edge_offset_memory_size = edge_count * sizeof(int);
+	size_t edge_start_memory_size = vertex_count * sizeof(int);
 	size_t tail_vertex_memory_size = edge_count * sizeof(int);
 	cout << "Size of memory region for vertex rank: " << vertex_rank_memory_size << " bytes\n";
 	cout << "Size of memory region for edge message: " << edge_msg_memory_size << " bytes\n";
-	cout << "Size of memory region for edge offset: " << edge_offset_memory_size << " bytes\n";
 
 	// Allocate aligned memory for vertex ranks to use them in
 	// buffers with CL_MEM_USE_HOST_PTR.
@@ -225,20 +196,20 @@ void medusa(
 		);
 	SAMPLE_CHECK_ERRORS(err);
 
+	cl_mem vertex_edge_start_buffer = clCreateBuffer(
+		oclobjects.context,
+		CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+		edge_start_memory_size,
+		vertexArray.start,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+
 	cl_mem edge_msg_buffer = clCreateBuffer(
 		oclobjects.context,
 		CL_MEM_WRITE_ONLY,
 		edge_msg_memory_size,
 		NULL,
-		&err
-		);
-	SAMPLE_CHECK_ERRORS(err);
-
-	cl_mem edge_offset_buffer = clCreateBuffer(
-		oclobjects.context,
-		CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-		edge_offset_memory_size,
-		edgeArray.offset,
 		&err
 		);
 	SAMPLE_CHECK_ERRORS(err);
@@ -271,7 +242,7 @@ void medusa(
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(sendMsgKernel.kernel, 1, sizeof(cl_mem), &vertex_edge_count_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(sendMsgKernel.kernel, 2, sizeof(cl_mem), &edge_offset_buffer);
+	err = clSetKernelArg(sendMsgKernel.kernel, 2, sizeof(cl_mem), &vertex_edge_start_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(sendMsgKernel.kernel, 3, sizeof(cl_mem), &edge_msg_buffer);
 	SAMPLE_CHECK_ERRORS(err);
@@ -285,9 +256,11 @@ void medusa(
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(combineKernel.kernel, 1, sizeof(cl_mem), &edge_msg_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(combineKernel.kernel, 2, sizeof(cl_mem), &edge_offset_buffer);
+	err = clSetKernelArg(combineKernel.kernel, 2, sizeof(cl_mem), &vertex_edge_count_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(combineKernel.kernel, 3, sizeof(cl_mem), &vertex_rank_output_buffer);
+	err = clSetKernelArg(combineKernel.kernel, 3, sizeof(cl_mem), &vertex_edge_start_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(combineKernel.kernel, 4, sizeof(cl_mem), &vertex_rank_output_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 
 	// -----------------------------------------------------------------------
@@ -335,7 +308,7 @@ void medusa(
 			);
 
 		cout << "After send message kernel\n";
-		for (int i = 0; i < edgeCount; i++){
+		for (size_t i = 0; i < edge_count; i++){
 			cout << edgeArray.message[i] << " ";
 		}
 		cout << endl;
@@ -379,7 +352,6 @@ void medusa(
 	clReleaseMemObject(vertex_rank_buffer);
 	clReleaseMemObject(vertex_edge_count_buffer);
 	clReleaseMemObject(edge_msg_buffer);
-	clReleaseMemObject(edge_offset_buffer);
 	clReleaseMemObject(vertex_rank_output_buffer);
 
 	cout << "Vertex rank after Medusa:" << endl;
@@ -391,20 +363,22 @@ void medusa(
 
 }
 
-void callMedusa(CmdParserMedusa cmdparser,
-	int vertex_count,
+
+void callMedusa(CmdParserMedusa cmdparser, 
+	int vertex_count, 
 	int edgeCount,
 	OpenCLBasic& oclobjects,
 	OpenCLProgramOneKernel& sendMsgKernel,
-	OpenCLProgramOneKernel& combineKernel) {
+	OpenCLProgramOneKernel& combineKernel ){
 	// Call medusa with required type of elements
 	if (cmdparser.arithmetic_int.isSet())
 	{
-		VertexArray<int> vertexArray;
-		EdgeArray<int> edgeArray;
-		constructData(vertex_count, edgeCount, vertexArray, edgeArray);
+		VertexArrayAA<int> vertexArray;
+		EdgeArrayAA<int> edgeArray;
+		constructDataAA(vertex_count, edgeCount, vertexArray, edgeArray);
 		medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edgeCount, vertexArray, edgeArray);
 	}
 }
+
 
 #endif

@@ -42,6 +42,9 @@
     <ClInclude Include="pagerank.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pagerank_aa.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp">
