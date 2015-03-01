@@ -34,15 +34,16 @@
 #include "basic.hpp"
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
-#include "pagerank_aa.hpp"
+#include "pagerank_aos.hpp"
 
+#define AOS true
 
 using namespace std;
 
 
 //count the number of edges
 int edgeCount = 0;
-wstring clFileName = L"pagerank_aa.cl";
+wstring clFileName = L"pagerank_aos.cl";
 
 void breakPoint () {
 	int continue_key;
@@ -113,7 +114,7 @@ int main (int argc, const char** argv)
 
 		size_t vertex_count = cmdparser.vertex_count.getValue();
 
-		callMedusa(cmdparser, vertex_count, edgeCount, oclobjects, sendMsgKernel, combineKernel);
+		invokeMedusa(cmdparser, vertex_count, edgeCount, oclobjects, sendMsgKernel, combineKernel);
 		
         return 0;
     }

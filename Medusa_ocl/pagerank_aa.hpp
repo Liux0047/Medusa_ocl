@@ -364,7 +364,7 @@ void medusa(
 }
 
 
-void callMedusa(CmdParserMedusa cmdparser, 
+void invokeMedusa(CmdParserMedusa cmdparser,
 	int vertex_count, 
 	int edgeCount,
 	OpenCLBasic& oclobjects,
