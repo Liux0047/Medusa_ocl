@@ -60,6 +60,7 @@ __kernel void send_msg (
 	global EdgeAOS *edgeArray
 )
 {
+
 	int id = get_global_id(0);
 		
 	T msg = (vertexArray[id].vertex_rank + vertexArray[id].edge_count/2) / vertexArray[id].edge_count;	//round to nearest integer
@@ -75,6 +76,7 @@ __kernel void send_msg (
 	edgeArray[edge_id].message = msg;
 	
 	
+	
 }
 
 
@@ -83,12 +85,9 @@ __kernel void send_msg (
  */
 __kernel void combine (
 	global VertexAOS *vertexArray,
-	global EdgeAOS *edgeArray,
-	global VertexAOS *vertexOutputArray
+	global EdgeAOS *edgeArray
 )
 {	
-
-
 	int id = get_global_id(0);
 	
 	int edge_id = id;
@@ -99,13 +98,12 @@ __kernel void combine (
 
 		// atomic add floats
 		//while ( atom_cmpxchg( mutex[ tail_vertex[edge_id] ], 0 ,1 ) );
-		atomic_add(&vertexOutputArray[ edgeArray[edge_id].tail_vertex ].vertex_rank, edgeArray[edge_id].message);
+		atomic_add(&vertexArray[ edgeArray[edge_id].tail_vertex ].vertex_rank, edgeArray[edge_id].message);
 		//atom_xchg ( mutex[ tail_vertex[edge_id] ], 0 );
 		
 		edge_id += edgeArray[edge_id].offset;
 	};
-	atomic_add(&vertexOutputArray[ edgeArray[edge_id].tail_vertex ].vertex_rank, edgeArray[edge_id].message);
+	atomic_add(&vertexArray[ edgeArray[edge_id].tail_vertex ].vertex_rank, edgeArray[edge_id].message);
 	
-
 	
 }
