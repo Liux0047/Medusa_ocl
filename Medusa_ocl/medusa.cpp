@@ -34,7 +34,7 @@
 #include "basic.hpp"
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
-#include "APSP_aa.hpp"
+#include "pagerank.hpp"
 
 #define AOS true
 
@@ -43,7 +43,7 @@ using namespace std;
 
 //count the number of edges
 int edgeCount = 0;
-wstring clFileName = L"APSP_aa.cl";
+wstring clFileName = L"pagerank.cl";
 
 void breakPoint () {
 	int continue_key;

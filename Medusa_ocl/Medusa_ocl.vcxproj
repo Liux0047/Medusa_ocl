@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="APSP.hpp" />
     <ClInclude Include="APSP_aa.hpp" />
+    <ClInclude Include="APSP_aos.hpp" />
     <ClInclude Include="basic.hpp" />
     <ClInclude Include="cmdoptions.hpp" />
     <ClInclude Include="cmdparser.hpp" />
