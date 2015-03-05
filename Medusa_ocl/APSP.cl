@@ -49,8 +49,8 @@ __kernel void send_msg (
 {
 	int id = get_global_id(0);
 		
-	row_weights[id] = edge_weight_list[k * vertex_count + id];
-	col_weights[id] = edge_weight_list[id *vertex_count + k];
+	col_weights[id] = edge_weight_list[k * vertex_count + id];
+	row_weights[id] = edge_weight_list[id *vertex_count + k];
 		
 }
 
@@ -74,7 +74,7 @@ __kernel void combine (
 
     if(row_weight != -1 && col_weight != -1) { 
         int sum =  (row_weight + col_weight);
-        if (edge_weight_list[row * vertex_count + col] == -1 || sum < edge_weight_list[row * vertex_count + col])
-            edge_weight_list[row * vertex_count + col] = sum;
+        if (edge_weight_list[col * vertex_count + row] == -1 || sum < edge_weight_list[col * vertex_count + row])
+            edge_weight_list[col * vertex_count + row] = sum;
     }
 }

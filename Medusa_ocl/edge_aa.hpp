@@ -9,6 +9,8 @@ struct EdgeArrayAA {
 	int *tail_vertex;
 	
 	T *message;
+
+	T *weight;
 };
 
 #endif  // EDGE_AA_H_
