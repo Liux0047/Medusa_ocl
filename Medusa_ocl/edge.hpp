@@ -11,6 +11,8 @@ struct EdgeArray {
 	int *offset;	// the number of elements down the array with the same head vertex; -1 for end
 
 	T *message;
+
+	T *weight;
 };
 
 #endif  // EDGE_H_
