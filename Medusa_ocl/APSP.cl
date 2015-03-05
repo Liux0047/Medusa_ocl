@@ -43,15 +43,15 @@ __kernel void send_msg (
 	global T *edge_weight_list,
 	global T *row_weights,
 	global T *col_weights,
+	int vertex_count,
 	int k
-
 )
 {
 	int id = get_global_id(0);
 		
-	row_weights[id] = edge_weight_list[k * 4 + id];
-	col_weights[id] = edge_weight_list[id *4 + k];
-	
+	row_weights[id] = edge_weight_list[k * vertex_count + id];
+	col_weights[id] = edge_weight_list[id *vertex_count + k];
+		
 }
 
 
@@ -59,9 +59,10 @@ __kernel void send_msg (
  * combine messages from edges
  */
 __kernel void combine (
+	global T *edge_weight_list,
 	global T *row_weights,
 	global T *col_weights,
-	global T *edge_weight_list
+	int vertex_count
 )
 {	
 
@@ -73,9 +74,7 @@ __kernel void combine (
 
     if(row_weight != -1 && col_weight != -1) { 
         int sum =  (row_weight + col_weight);
-        if (edge_weight_list[row * 4 + col] == -1 || sum < edge_weight_list[row * 4 + col])
-            edge_weight_list[row * 4 + col] = sum;
+        if (edge_weight_list[row * vertex_count + col] == -1 || sum < edge_weight_list[row * vertex_count + col])
+            edge_weight_list[row * vertex_count + col] = sum;
     }
-    
-		
 }

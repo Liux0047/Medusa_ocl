@@ -180,7 +180,7 @@ void medusa(
 	
 	cl_mem edge_weight_buffer = clCreateBuffer(
 		oclobjects.context,
-		CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
 		edge_weight_memory_size,
 		edgeArray.weight,
 		&err
@@ -206,7 +206,7 @@ void medusa(
 	SAMPLE_CHECK_ERRORS(err);
 
 
-
+	int vertex_count_int = static_cast<int> (vertex_count);
 
 	// -----------------------------------------------------------------------
 	// Setting kernel arguments for sendMsg
@@ -218,17 +218,21 @@ void medusa(
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(sendMsgKernel.kernel, 2, sizeof(cl_mem), &col_weight_buffer);
 	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(sendMsgKernel.kernel, 3, sizeof(int), &vertex_count_int);
+	SAMPLE_CHECK_ERRORS(err);
 
 
 	// -----------------------------------------------------------------------
 	// Setting kernel arguments for combine
 	// -----------------------------------------------------------------------
 
-	err = clSetKernelArg(combineKernel.kernel, 0, sizeof(cl_mem), &row_weight_buffer);
+	err = clSetKernelArg(combineKernel.kernel, 0, sizeof(cl_mem), &edge_weight_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(combineKernel.kernel, 1, sizeof(cl_mem), &col_weight_buffer);
+	err = clSetKernelArg(combineKernel.kernel, 1, sizeof(cl_mem), &row_weight_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(combineKernel.kernel, 2, sizeof(cl_mem), &edge_weight_buffer);
+	err = clSetKernelArg(combineKernel.kernel, 2, sizeof(cl_mem), &col_weight_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(combineKernel.kernel, 3, sizeof(int), &vertex_count_int);
 	SAMPLE_CHECK_ERRORS(err);
 
 	// -----------------------------------------------------------------------
@@ -257,7 +261,7 @@ void medusa(
 	{
 				
 		// Here we start measuring host time for kernel execution
-		err = clSetKernelArg(sendMsgKernel.kernel, 3, sizeof(cl_mem), &k);
+		err = clSetKernelArg(sendMsgKernel.kernel, 4, sizeof(int), &k);
 		SAMPLE_CHECK_ERRORS(err);
 
 		cout << "Invoking kernel k=" << k << " \n";
@@ -270,8 +274,7 @@ void medusa(
 			NULL,
 			0, 0, 0
 			);
-
-		/*
+		
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
 			combineKernel.kernel,
@@ -281,29 +284,54 @@ void medusa(
 			NULL,
 			0, 0, 0
 			);
-			*/
+			
 
 		err = clFinish(oclobjects.queue);
 		SAMPLE_CHECK_ERRORS(err);
-
-
+		
 	}
+
+	
 	// It is important to measure end host time after clFinish call
 	double end = time_stamp();
 
 	double time = end - start;
 	cout << "Host time: " << time << " sec.\n";
 
-	// deallocated resources
-	clReleaseMemObject(edge_weight_buffer);
-	clReleaseMemObject(row_weight_buffer);
-	clReleaseMemObject(col_weight_buffer);
+	//read the output ranks on vertices
+	clEnqueueMapBuffer(
+		oclobjects.queue,
+		edge_weight_buffer,
+		CL_TRUE,    // blocking map
+		CL_MAP_READ,
+		0,
+		edge_weight_memory_size,
+		0, 0, 0,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+	
 
 	cout << "edge weight after Medusa:" << endl;
 	for (int i = 0; i < static_cast<int> (edge_count); i++) {
 		cout << edgeArray.weight[i] << " ";
 	}
 
+	err = clEnqueueUnmapMemObject(
+		oclobjects.queue,
+		edge_weight_buffer,
+		edgeArray.weight,
+		0, 0, 0
+		);
+	SAMPLE_CHECK_ERRORS(err);
+	
+
+	// deallocated resources
+	clReleaseMemObject(edge_weight_buffer);
+	clReleaseMemObject(row_weight_buffer);
+	clReleaseMemObject(col_weight_buffer);
+
+	
 	breakPoint();
 
 }
