@@ -57,6 +57,9 @@
     <ClInclude Include="APSP.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="APSP_aa.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp">
@@ -86,6 +89,9 @@
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
     <Intel_OpenCL_Build_Rules Include="APSP.cl">
+      <Filter>OpenCL Files</Filter>
+    </Intel_OpenCL_Build_Rules>
+    <Intel_OpenCL_Build_Rules Include="APSP_aa.cl">
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
   </ItemGroup>
