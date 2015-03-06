@@ -42,7 +42,6 @@ using namespace std;
 
 
 //count the number of edges
-int edgeCount = 0;
 wstring clFileName = L"pagerank.cl";
 
 void breakPoint () {
@@ -147,11 +146,10 @@ int main (int argc, const char** argv)
 			);
 
 
-		size_t vertex_count = cmdparser.vertex_count.getValue();
+		size_t vertexCount = cmdparser.vertex_count.getValue();
+		size_t edgeCount = cmdparser.edge_count.getValue();
 
-		int *ranks = makePageRankVertices(static_cast<int>(vertex_count));
-		int **edges = makePageRankEdges(static_cast<int>(vertex_count), edgeCount);
-		invokeMedusa(cmdparser, vertex_count, edgeCount, oclobjects, sendMsgKernel, combineKernel, ranks, edges);
+		invokeMedusa(cmdparser, vertexCount, edgeCount, oclobjects, sendMsgKernel, combineKernel);
 		
         return 0;
     }

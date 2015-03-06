@@ -11,12 +11,78 @@
 template <typename T>
 void constructData(
 	int vertexCount,
-	int &edgeCount,
+	int edgeCount,
 	VertexArray<T> &vertexArray,
-	EdgeArray<T> &edgeArray,
-	int *ranks,
-	int **edges
+	EdgeArray<T> &edgeArray
 	) {
+
+	// Initialize vertices
+	T *vertex_rank = new T[static_cast<int> (vertexCount)];
+	vertexArray.vertex_rank = vertex_rank;
+
+	for (size_t i = 0; i < vertexCount; ++i)
+	{
+		// Fill the vertex with random values from range [0, 1]
+		srand(time(NULL));
+		T rank = (rand() % 100) / 100;
+		vertexArray.vertex_rank[i] = rank;
+	}
+
+
+	//initialize edges
+	int *head_vertex = new int[static_cast<int> (edgeCount)];
+	int *tail_vertex = new int[static_cast<int> (edgeCount)];
+	int *offset = new int[static_cast<int> (edgeCount)];
+	T *message = new T[static_cast<int> (edgeCount)];
+	int *vertex_edge_count = new int[static_cast<int> (vertexCount)];
+
+	for (size_t i = 0; i < edgeCount; i++) {
+		tail_vertex[i] = 0;
+		offset[i] = 0;
+	}
+
+	for (size_t i = 0; i < vertexCount; i++) {
+		vertex_edge_count[i] = 0;
+	}
+
+	edgeArray.tail_vertex = tail_vertex;
+	edgeArray.offset = offset;
+	edgeArray.message = message;
+	vertexArray.edge_count = vertex_edge_count;
+
+	int *last_edge_pos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
+	for (size_t i = 0; i < vertexCount; i++) {
+		last_edge_pos[i] = -1;
+	}
+
+	for (size_t i = 0; i < edgeCount; ++i)
+	{
+		// Fill the edge with random values from range [0, vertex_count]
+		srand(time(NULL));
+		int head = i % vertexCount;
+		int tail;
+		// avoids self pointing edges
+		do {
+			tail = rand() % vertexCount;
+		} while (tail == head);
+
+		edgeArray.tail_vertex[i] =  tail;
+
+		//record the offset
+		if (last_edge_pos[head] != -1) {
+			vertexArray.edge_count[head]++;
+			edgeArray.offset[last_edge_pos[head]] = i - last_edge_pos[head];
+		}
+		last_edge_pos[head] = i;
+
+	}
+
+	for (size_t i = 0; i < vertexCount; i++){
+		offset[last_edge_pos[i]] = LAST_OUT_EDGE;
+	}
+
+	delete[] last_edge_pos;
+
 
 	/* file IO
 	
@@ -68,7 +134,7 @@ void constructData(
 			rowNum++;
 		}
 	}
-	*/
+	
 
 	//initialize edges
 	cout << "Initializing Graph \n";
@@ -135,7 +201,7 @@ void constructData(
 	//cleaning up
 	delete[] lastEdgePos;
 
-	/*
+	
 	//output for test
 	cout << "Vertex rank:" << endl;
 	for (int i = 0; i < vertexCount; i++) {
@@ -389,15 +455,13 @@ void invokeMedusa(CmdParserMedusa cmdparser,
 	int edgeCount,
 	OpenCLBasic& oclobjects,
 	OpenCLProgramOneKernel& sendMsgKernel,
-	OpenCLProgramOneKernel& combineKernel,
-	int *ranks,
-	int **edges) {
+	OpenCLProgramOneKernel& combineKernel) {
 	// Call medusa with required type of elements
 	if (cmdparser.arithmetic_int.isSet())
 	{
 		VertexArray<int> vertexArray;
 		EdgeArray<int> edgeArray;
-		constructData(vertex_count, edgeCount, vertexArray, edgeArray, ranks, edges);
+		constructData(vertex_count, edgeCount, vertexArray, edgeArray);
 		medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edgeCount, vertexArray, edgeArray);
 	}
 }
