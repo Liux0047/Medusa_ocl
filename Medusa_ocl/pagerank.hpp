@@ -13,9 +13,13 @@ void constructData(
 	int vertexCount,
 	int &edgeCount,
 	VertexArray<T> &vertexArray,
-	EdgeArray<T> &edgeArray
+	EdgeArray<T> &edgeArray,
+	int *ranks,
+	int **edges
 	) {
 
+	/* file IO
+	
 	ifstream inDataFile("data/large-sample.txt", ios::in);
 
 	if (!inDataFile) {
@@ -52,8 +56,7 @@ void constructData(
 	for (int i = 0; i < vertexCount; ++i) {
 		edge[i] = new int[vertexCount];
 	}
-
-
+	
 	//read into the edge [][] array 
 	int rowNum = 0;		//row number is the head vertex
 	int colNum = 0;		//col number is the tail vertex
@@ -65,8 +68,11 @@ void constructData(
 			rowNum++;
 		}
 	}
+	*/
 
 	//initialize edges
+	cout << "Initializing Graph \n";
+	vertexArray.vertex_rank = ranks;
 	int *tail_vertex = new int[static_cast<int> (edgeCount)];
 	int *offset = new int[static_cast<int> (edgeCount)];
 	T *message = new T[static_cast<int> (edgeCount)];
@@ -101,7 +107,7 @@ void constructData(
 	while (!halt) {
 		halt = true;
 		for (int row = 0; row < vertexCount; row++){
-			while (currentCol[row] < (static_cast<int> (vertexCount)) && edge[row][currentCol[row]] != 1) {
+			while (currentCol[row] < (static_cast<int> (vertexCount)) && edges[row][currentCol[row]] != 1) {
 				currentCol[row]++;
 			}
 
@@ -125,12 +131,9 @@ void constructData(
 		edgeArray.offset[lastEdgePos[i]] = LAST_OUT_EDGE;
 	}
 
+	
 	//cleaning up
 	delete[] lastEdgePos;
-	for (int i = 0; i < vertexCount; ++i) {
-		delete[] edge[i];
-	}
-	delete[] edge;
 
 	/*
 	//output for test
@@ -386,13 +389,15 @@ void invokeMedusa(CmdParserMedusa cmdparser,
 	int edgeCount,
 	OpenCLBasic& oclobjects,
 	OpenCLProgramOneKernel& sendMsgKernel,
-	OpenCLProgramOneKernel& combineKernel) {
+	OpenCLProgramOneKernel& combineKernel,
+	int *ranks,
+	int **edges) {
 	// Call medusa with required type of elements
 	if (cmdparser.arithmetic_int.isSet())
 	{
 		VertexArray<int> vertexArray;
 		EdgeArray<int> edgeArray;
-		constructData(vertex_count, edgeCount, vertexArray, edgeArray);
+		constructData(vertex_count, edgeCount, vertexArray, edgeArray, ranks, edges);
 		medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edgeCount, vertexArray, edgeArray);
 	}
 }

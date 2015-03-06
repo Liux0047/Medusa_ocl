@@ -51,6 +51,41 @@ void breakPoint () {
 	cin >> continue_key;
 }
 
+int *makePageRankVertices(int vertexCount) {
+	int *ranks = new int[vertexCount];
+	for (int i = 0; i < vertexCount; i++) {
+		ranks[i] = rand() % 100 + 1;
+	}
+
+	return ranks;
+}
+
+int **makePageRankEdges(int vertexCount, int &edgeCount) {
+	int** edges = new int*[vertexCount];
+	for (int i = 0; i < vertexCount; ++i) {
+		edges[i] = new int[vertexCount];
+	}
+
+	int value;
+
+	for (int i = 0; i < vertexCount; i++) {
+		for (int j = 0; j < vertexCount; j++) {
+			if (i != j) {
+				value = (rand() % vertexCount) / (vertexCount -16);
+				if (value == 1){
+					edgeCount++;
+				}
+			}
+			else {
+				value = 0;
+			}
+			edges[i][j] = value;
+		}
+	}
+
+	return edges;
+}
+
 // The main medusa function with all application specific
 
 
@@ -114,7 +149,9 @@ int main (int argc, const char** argv)
 
 		size_t vertex_count = cmdparser.vertex_count.getValue();
 
-		invokeMedusa(cmdparser, vertex_count, edgeCount, oclobjects, sendMsgKernel, combineKernel);
+		int *ranks = makePageRankVertices(static_cast<int>(vertex_count));
+		int **edges = makePageRankEdges(static_cast<int>(vertex_count), edgeCount);
+		invokeMedusa(cmdparser, vertex_count, edgeCount, oclobjects, sendMsgKernel, combineKernel, ranks, edges);
 		
         return 0;
     }
