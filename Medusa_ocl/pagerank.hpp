@@ -377,13 +377,14 @@ void medusa(
 	// -----------------------------------------------------------------------
 	// Loop with the kernel invocation
 	// -----------------------------------------------------------------------
+	cout << "Invoking kernel \n";
 
+	double start = time_stamp();
 	for (int i = 0; i < cmdparser.iterations.getValue(); i++)
 	{
 		// Here we start measuring host time for kernel execution
-		double start = time_stamp();
+		
 
-		cout << "Invoking kernel \n";
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
 			sendMsgKernel.kernel,
@@ -410,14 +411,12 @@ void medusa(
 		err = clFinish(oclobjects.queue);
 		SAMPLE_CHECK_ERRORS(err);
 
-
-		// It is important to measure end host time after clFinish call
-		double end = time_stamp();
-
-		double time = end - start;
-		cout << "Host time: " << time << " sec.\n";
-
 	}
+	// It is important to measure end host time after clFinish call
+	double end = time_stamp();
+
+	double time = end - start;
+	cout << "Host time: " << time << " sec.\n";
 
 	//read the output ranks on vertices
 	clEnqueueReadBuffer(
