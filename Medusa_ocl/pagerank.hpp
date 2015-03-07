@@ -9,6 +9,39 @@
 
 //construct the data from the file
 template <typename T>
+int* generateQuota(int vertexCount, int totalCount) {
+	int *randomInput = new int[vertexCount];
+	int sum = 0;
+	for (int i = 0; i < vertexCount; i++){
+		randomInput[i] = rand() % 100 + 1;
+		sum += randomInput[i];
+	}
+	double coefficient = (double)sum / totalCount;
+	//normalize
+	int intSum = 0;
+	int reserve = 0;
+	for (int i = 1; i < vertexCount; i++){
+		randomInput[i] = static_cast<T> ((randomInput[i] + 0.5) / coefficient);
+		if (randomInput[i] == 0){
+			randomInput[i] = 1;
+			reserve++;
+		}
+		else if (randomInput[i] > reserve){
+			randomInput[i] -= reserve;
+			reserve = 0;
+		}
+		intSum += randomInput[i];
+	}
+	randomInput[0] = totalCount - intSum;
+	if (randomInput[0] <= 0){
+		cout << "Invalid sample generated \n";
+		breakPoint();
+	}
+	return randomInput;
+}
+
+//construct the data from the file
+template <typename T>
 void constructData(
 	int vertexCount,
 	int edgeCount,
@@ -20,11 +53,12 @@ void constructData(
 	T *vertex_rank = new T[static_cast<int> (vertexCount)];
 	vertexArray.vertex_rank = vertex_rank;
 
+	T rank;
+	srand(time(NULL));
 	for (size_t i = 0; i < vertexCount; ++i)
 	{
-		// Fill the vertex with random values from range [0, 1]
-		srand(time(NULL));
-		T rank = (rand() % 100) / 100;
+		// Fill the vertex with random values from range [1, 100]
+		rank = (rand() % 100) + 1;
 		vertexArray.vertex_rank[i] = rank;
 	}
 
@@ -55,151 +89,60 @@ void constructData(
 		last_edge_pos[i] = -1;
 	}
 
+	int *quota = generateQuota<T>(vertexCount, edgeCount);
+	int cellCount = 0;	//visualize in a matrix, number of cells that has been traversed
+	bool duplicate = true;
 	for (size_t i = 0; i < edgeCount; ++i)
 	{
 		// Fill the edge with random values from range [0, vertex_count]
-		srand(time(NULL));
-		int head = i % vertexCount;
-		int tail;
-		// avoids self pointing edges
-		do {
-			tail = rand() % vertexCount;
-		} while (tail == head);
+		int head = cellCount % vertexCount;
+		if (vertexArray.edge_count[head] < quota[head]){
+			int tail = 0;
 
-		edgeArray.tail_vertex[i] =  tail;
+			do {
+				//generate a tail
+				do {
+					// avoids self pointing edges
+					tail = rand() % vertexCount;
+				} while (tail == head);
 
-		//record the offset
-		if (last_edge_pos[head] != -1) {
+				duplicate = false;
+				int edgeId = head;
+				while (edgeArray.offset[edgeId] <= vertexCount){
+					if (tail == edgeArray.tail_vertex[edgeId]){
+						duplicate = true;
+						break;
+					}
+					if (edgeArray.offset[edgeId] == 0) {
+						break;
+					}
+					edgeId += edgeArray.offset[edgeId];
+				}
+			} while (duplicate);
+			
+
+			edgeArray.tail_vertex[i] = tail;
 			vertexArray.edge_count[head]++;
-			edgeArray.offset[last_edge_pos[head]] = i - last_edge_pos[head];
+
+			//record the offset
+			if (last_edge_pos[head] != -1) {
+				edgeArray.offset[last_edge_pos[head]] = i - last_edge_pos[head];
+			}
+			last_edge_pos[head] = i;
 		}
-		last_edge_pos[head] = i;
+		else {
+			i--;
+		}
+		cellCount++;		
 
 	}
 
 	for (size_t i = 0; i < vertexCount; i++){
 		offset[last_edge_pos[i]] = LAST_OUT_EDGE;
 	}
-
-	delete[] last_edge_pos;
-
-
-	/* file IO
-	
-	ifstream inDataFile("data/large-sample.txt", ios::in);
-
-	if (!inDataFile) {
-		cerr << "File could not be opened" << endl;
-		exit(1);
-	}
-
-	// first line is the vertex rank
-	cout << "Initialize vertices \n";
-	T *vertex_rank = new T[static_cast<int> (vertexCount)];
-	for (int i = 0; i < vertexCount; i++) {
-		inDataFile >> vertex_rank[i];
-	}
-	vertexArray.vertex_rank = vertex_rank;
-
-	//determine the edge counts
-	long edgeStartLocation = inDataFile.tellg();
-
-	int hasEdge;
-	while (!inDataFile.eof()) {
-		inDataFile >> hasEdge;
-		// 1 means edge exits; 0 otherwise
-		if (hasEdge == 1) {
-			edgeCount += hasEdge;
-		}
-	}
-
-	//rewind to edge starting position
-	inDataFile.clear();
-	inDataFile.seekg(edgeStartLocation);
-
-	//dynamic allocate a 2D array
-	int** edge = new int*[vertexCount];
-	for (int i = 0; i < vertexCount; ++i) {
-		edge[i] = new int[vertexCount];
-	}
-	
-	//read into the edge [][] array 
-	int rowNum = 0;		//row number is the head vertex
-	int colNum = 0;		//col number is the tail vertex
-	while (inDataFile >> hasEdge && rowNum < vertexCount) {	//read till EOF and close the file
-		edge[rowNum][colNum] = hasEdge;
-		colNum++;
-		if (colNum % vertexCount == 0) {	//next line
-			colNum = 0;
-			rowNum++;
-		}
-	}
-	
-
-	//initialize edges
-	cout << "Initializing Graph \n";
-	vertexArray.vertex_rank = ranks;
-	int *tail_vertex = new int[static_cast<int> (edgeCount)];
-	int *offset = new int[static_cast<int> (edgeCount)];
-	T *message = new T[static_cast<int> (edgeCount)];
-	int *vertex_edge_count = new int[static_cast<int> (vertexCount)];
-
-	for (size_t i = 0; i < edgeCount; i++) {
-		tail_vertex[i] = 0;
-		offset[i] = 0;
-	}
-
-	for (size_t i = 0; i < vertexCount; i++) {
-		vertex_edge_count[i] = 0;
-	}
-
-	edgeArray.tail_vertex = tail_vertex;
-	edgeArray.offset = offset;
-	edgeArray.message = message;
-	vertexArray.edge_count = vertex_edge_count;
-
-
-	int *lastEdgePos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
-	int *currentCol = new int[static_cast<int> (vertexCount)];	// the position of current col number for each vertex in the input matrix
-	//initialize last edge position array
-	for (size_t i = 0; i < vertexCount; i++) {
-		lastEdgePos[i] = LAST_OUT_EDGE;
-		currentCol[i] = 0;
-	}
-
-	// construct CAA in column major foramt
-	int numEdgesAdded = 0;
-	bool halt = false;
-	while (!halt) {
-		halt = true;
-		for (int row = 0; row < vertexCount; row++){
-			while (currentCol[row] < (static_cast<int> (vertexCount)) && edges[row][currentCol[row]] != 1) {
-				currentCol[row]++;
-			}
-
-			if (currentCol[row] < (static_cast<int> (vertexCount))) {
-				halt = false;
-				vertexArray.edge_count[row]++;
-				//record the tail vertex
-				(edgeArray.tail_vertex)[numEdgesAdded] = currentCol[row];
-				//record the offset
-				if (lastEdgePos[row] != LAST_OUT_EDGE) {
-					edgeArray.offset[lastEdgePos[row]] = numEdgesAdded - lastEdgePos[row];
-				}
-				lastEdgePos[row] = numEdgesAdded;
-				numEdgesAdded++;
-			}
-			currentCol[row]++;
-		}
-	}
-
-	for (int i = 0; i < vertexCount; i++){
-		edgeArray.offset[lastEdgePos[i]] = LAST_OUT_EDGE;
-	}
-
-	
+		
 	//cleaning up
-	delete[] lastEdgePos;
+	delete[] last_edge_pos;
 
 	
 	//output for test
@@ -223,7 +166,7 @@ void constructData(
 		cout << edgeArray.offset[i] << " ";
 	}
 	cout << endl;
-	*/
+	
 
 }
 
@@ -438,12 +381,12 @@ void medusa(
 	clReleaseMemObject(edge_offset_buffer);
 	clReleaseMemObject(vertex_rank_output_buffer);
 
-	/*
+	
 	cout << "Vertex rank after Medusa:" << endl;
 	for (int i = 0; i < static_cast<int> (vertex_count); i++) {
 		cout << vertexArray.vertex_rank[i] << " ";
 	}
-	*/
+	
 
 	breakPoint();
 
