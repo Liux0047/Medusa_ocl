@@ -13,8 +13,6 @@ struct EdgeAOS {
 	cl_int offset;	// the number of elements down the array with the same head vertex; -1 for end
 
 	cl_int message;
-
-	cl_int weight;
 };
 
 #endif  // EDGE_AA_H_

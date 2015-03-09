@@ -34,7 +34,7 @@
 #include "basic.hpp"
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
-#include "pagerank_aa.hpp"
+#include "pagerank_aos.hpp"
 
 #define AOS true
 
@@ -42,7 +42,7 @@ using namespace std;
 
 
 //count the number of edges
-wstring clFileName = L"pagerank_aa.cl";
+wstring clFileName = L"pagerank_aos.cl";
 
 void breakPoint () {
 	int continue_key;

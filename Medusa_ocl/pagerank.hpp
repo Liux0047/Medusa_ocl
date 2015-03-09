@@ -140,9 +140,7 @@ void constructData(
 		}
 		cout << endl;
 	}
-	
-	
-
+		
 }
 
 

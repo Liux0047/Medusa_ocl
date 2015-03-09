@@ -8,142 +8,104 @@
 #include "vertex_aos.hpp"
 #include "edge_aos.hpp"
 #include "cmdoptions.hpp"
+#include "common.hpp"
 
 //construct the data from the file
 template <typename T>
-EdgeAOS<T> * constructData(
+void constructData(
 	int vertexCount,
-	int &edgeCount,
-	VertexAOS<T> *vertexArray
-	
+	int edgeCount,
+	VertexAOS<T> *vertexArray,
+	EdgeAOS<T> *edgeArray	
 	) {
 
-	ifstream inDataFile("data/small-sample.txt", ios::in);
-
-	if (!inDataFile) {
-		cerr << "File could not be opened" << endl;
-		exit(1);
+	cout << "constructing data" << endl;
+	T rank;
+	srand(time(NULL));
+	for (size_t i = 0; i < vertexCount; ++i)
+	{
+		// Fill the vertex with random values from range [1, 100]
+		rank = (rand() % 100) + 1;
+		vertexArray[i].vertex_rank = rank;
 	}
 
-	// first line is the vertex rank
-	cout << "Initialize vertices \n";
-	for (int i = 0; i < vertexCount; i++) {
-		inDataFile >> vertexArray[i].vertex_rank;
-	}
-
-	//determine the total edge counts
-	long edgeStartLocation = inDataFile.tellg();
-
-	int hasEdge;
-	while (!inDataFile.eof()) {
-		inDataFile >> hasEdge;
-		// 1 means edge exits; 0 otherwise
-		if (hasEdge == 1) {
-			edgeCount += hasEdge;
-		}
-	}
-
-	//rewind to edge starting position
-	inDataFile.clear();
-	inDataFile.seekg(edgeStartLocation);
-
-	//dynamic allocate a 2D array
-	int** edge = new int*[vertexCount];
-	for (int i = 0; i < vertexCount; ++i) {
-		edge[i] = new int[vertexCount];
-	}
-
-	//initialize the vertex and edge array
-	EdgeAOS<T> *edgeArray = new EdgeAOS<int>[(edgeCount)];
-
-
-	//read into the edge [][] array 
-	int rowNum = 0;		//row number is the head vertex
-	int colNum = 0;		//col number is the tail vertex
-	while (inDataFile >> hasEdge && rowNum < vertexCount) {	//read till EOF and close the file
-		edge[rowNum][colNum] = hasEdge;
-		colNum++;
-		if (colNum % vertexCount == 0) {	//next line
-			colNum = 0;
-			rowNum++;
-		}
-	}
-
-	//initialize edges
 	for (size_t i = 0; i < vertexCount; i++) {
 		vertexArray[i].edge_count = 0;
 	}
 
+	for (size_t i = 0; i < edgeCount; i++) {
+		edgeArray[i].offset = 0;
+	}
 
-
-	int *lastEdgePos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
-	int *currentCol = new int[static_cast<int> (vertexCount)];	// the position of current col number for each vertex in the input matrix
-	//initialize last edge position array
+	int *last_edge_pos = new int[static_cast<int> (vertexCount)];	// the position of last out edge for each vertex
 	for (size_t i = 0; i < vertexCount; i++) {
-		lastEdgePos[i] = LAST_OUT_EDGE;
-		currentCol[i] = 0;
+		last_edge_pos[i] = -1;
 	}
 
-	// construct CAA in column major foramt
-	int numEdgesAdded = 0;
-	bool halt = false;
-	while (!halt) {
-		halt = true;
-		for (int row = 0; row < vertexCount; row++){
-			while (currentCol[row] < (static_cast<int> (vertexCount)) && edge[row][currentCol[row]] != 1) {
-				currentCol[row]++;
-			}
+	int *quota = generateQuota<T>(vertexCount, edgeCount);
 
-			if (currentCol[row] < (static_cast<int> (vertexCount))) {
-				halt = false;
-				vertexArray[row].edge_count++;
-				//record the tail vertex
-				edgeArray[numEdgesAdded].tail_vertex = currentCol[row];
-				//record the offset
-				if (lastEdgePos[row] != LAST_OUT_EDGE) {
-					edgeArray[lastEdgePos[row]].offset = numEdgesAdded - lastEdgePos[row];
-				}
-				lastEdgePos[row] = numEdgesAdded;
-				numEdgesAdded++;
+	unsigned long cellCount = 0;	//visualize in a matrix, number of cells that has been traversed
+	//bool duplicate = true;
+	int head = 0;
+	for (size_t i = 0; i < edgeCount; ++i)
+	{
+		// Fill the edge with random values from range [0, vertex_count]
+		head = cellCount % vertexCount;
+		if (vertexArray[head].edge_count < quota[head]){
+			int tail = 0;
+
+			do {
+				// avoids self pointing edges
+				tail = rand() % vertexCount;
+			} while (tail == head);
+
+			edgeArray[i].tail_vertex = tail;
+			vertexArray[head].edge_count++;
+
+			//record the offset
+			if (last_edge_pos[head] != -1) {
+				edgeArray[last_edge_pos[head]].offset = i - last_edge_pos[head];
 			}
-			currentCol[row]++;
+			last_edge_pos[head] = i;
 		}
+		else {
+			i--;
+		}
+		cellCount++;
+
 	}
 
-	for (int i = 0; i < vertexCount; i++){
-		edgeArray[lastEdgePos[i]].offset = LAST_OUT_EDGE;
+	for (size_t i = 0; i < vertexCount; i++){
+		edgeArray[last_edge_pos[i]].offset = LAST_OUT_EDGE;
 	}
 
 	//cleaning up
-	delete[] lastEdgePos;
-	for (int i = 0; i < vertexCount; ++i) {
-		delete[] edge[i];
-	}
-	delete[] edge;
+	delete[] last_edge_pos;
 
-	//output for test
-	cout << "Vertex rank:" << endl;
-	for (int i = 0; i < vertexCount; i++) {
-		cout << vertexArray[i].vertex_rank << " ";
-	}
-	cout << endl;
-	cout << "Tail vertex:" << endl;
-	for (int i = 0; i < edgeCount; i++) {
-		cout << edgeArray[i].tail_vertex << " ";
-	}
-	cout << endl;
-	cout << "number of edges on each vertex" << endl;
-	for (int i = 0; i < vertexCount; i++) {
-		cout << vertexArray[i].edge_count << " ";
-	}
-	cout << endl;
-	cout << "Offset:" << endl;
-	for (int i = 0; i < edgeCount; i++) {
-		cout << edgeArray[i].offset << " ";
-	}
-	cout << endl;
 
-	return edgeArray;
+	if (vertexCount <= 4){
+		//output for test
+		cout << "Vertex rank:" << endl;
+		for (int i = 0; i < vertexCount; i++) {
+			cout << vertexArray[i].vertex_rank << " ";
+		}
+		cout << endl;
+		cout << "Tail vertex:" << endl;
+		for (int i = 0; i < edgeCount; i++) {
+			cout << edgeArray[i].tail_vertex << " ";
+		}
+		cout << endl;
+		cout << "number of edges on each vertex" << endl;
+		for (int i = 0; i < vertexCount; i++) {
+			cout << vertexArray[i].edge_count << " ";
+		}
+		cout << endl;
+		cout << "Offset:" << endl;
+		for (int i = 0; i < edgeCount; i++) {
+			cout << edgeArray[i].offset << " ";
+		}
+		cout << endl;
+	}
 }
 
 
@@ -240,13 +202,12 @@ void medusa(
 	// -----------------------------------------------------------------------
 	// Loop with the kernel invocation
 	// -----------------------------------------------------------------------
-
+	// Here we start measuring host time for kernel execution
+	double start = time_stamp();
+	cout << "Invoking kernel \n";
 	for (int i = 0; i < cmdparser.iterations.getValue(); i++)
 	{
-		// Here we start measuring host time for kernel execution
-		double start = time_stamp();
-
-		cout << "Invoking kernel \n";
+		
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
 			sendMsgKernel.kernel,
@@ -271,6 +232,16 @@ void medusa(
 
 		SAMPLE_CHECK_ERRORS(err);
 
+		err = clFinish(oclobjects.queue);
+		SAMPLE_CHECK_ERRORS(err);
+		
+	}
+	// It is important to measure end host time after clFinish call
+	double end = time_stamp();
+	double time = end - start;
+	cout << "Host time: " << time << " sec.\n";
+
+	if (vertex_count <= 4){
 		//read the output ranks on vertices
 		clEnqueueMapBuffer(
 			oclobjects.queue,
@@ -283,7 +254,7 @@ void medusa(
 			&err
 			);
 		SAMPLE_CHECK_ERRORS(err);
-		
+
 		cout << "Vertex rank after Medusa:" << endl;
 		for (int i = 0; i < static_cast<int> (vertex_count); i++) {
 			cout << vertexArray[i].vertex_rank << " ";
@@ -297,17 +268,6 @@ void medusa(
 			0, 0, 0
 			);
 		SAMPLE_CHECK_ERRORS(err);
-
-		err = clFinish(oclobjects.queue);
-		SAMPLE_CHECK_ERRORS(err);
-
-
-		// It is important to measure end host time after clFinish call
-		double end = time_stamp();
-
-		double time = end - start;
-		cout << "Host time: " << time << " sec.\n";
-
 	}
 
 	// deallocated resources
@@ -328,8 +288,9 @@ void invokeMedusa(CmdParserMedusa cmdparser,
 	if (cmdparser.arithmetic_int.isSet())
 	{
 		VertexAOS<int> *vertexArray = new VertexAOS<int>[(vertex_count)];
-		EdgeAOS<int> *edgeArray = constructData(vertex_count, edgeCount, vertexArray);
-		
+		EdgeAOS<int> *edgeArray = new EdgeAOS<int>[(edgeCount)];
+
+		constructData(vertex_count, edgeCount, vertexArray, edgeArray);		
 		medusa<int>(cmdparser, oclobjects, sendMsgKernel, combineKernel, vertex_count, edgeCount, vertexArray, edgeArray);
 	}
 }
