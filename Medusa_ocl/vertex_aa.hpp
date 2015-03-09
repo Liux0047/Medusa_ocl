@@ -5,7 +5,7 @@
 template <typename T>
 struct VertexArrayAA {
 	int *edge_count;
-	int *start;		//the starting position of the vertex's edges in the edgeArray
+	unsigned long *start;		//the starting position of the vertex's edges in the edgeArray
 	T *vertex_rank;
 };
 

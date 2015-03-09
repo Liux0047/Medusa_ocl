@@ -6,39 +6,7 @@
 #include "vertex.hpp"
 #include "edge.hpp"
 #include "cmdoptions.hpp"
-
-//construct the data from the file
-template <typename T>
-int* generateQuota(int vertexCount, int totalCount) {
-	int *randomInput = new int[vertexCount];
-	int sum = 0;
-	for (int i = 0; i < vertexCount; i++){
-		randomInput[i] = rand() % 100 + 1;
-		sum += randomInput[i];
-	}
-	double coefficient = (double)sum / totalCount;
-	//normalize
-	int intSum = 0;
-	int reserve = 0;
-	for (int i = 1; i < vertexCount; i++){
-		randomInput[i] = static_cast<T> ((randomInput[i] + 0.5) / coefficient);
-		if (randomInput[i] == 0){
-			randomInput[i] = 1;
-			reserve++;
-		}
-		else if (randomInput[i] > reserve){
-			randomInput[i] -= reserve;
-			reserve = 0;
-		}
-		intSum += randomInput[i];
-	}
-	randomInput[0] = totalCount - intSum;
-	if (randomInput[0] <= 0){
-		cout << "Invalid sample generated \n";
-		breakPoint();
-	}
-	return randomInput;
-}
+#include "common.hpp"
 
 //construct the data from the file
 template <typename T>
@@ -66,7 +34,6 @@ void constructData(
 
 
 	//initialize edges
-	int *head_vertex = new int[static_cast<int> (edgeCount)];
 	int *tail_vertex = new int[static_cast<int> (edgeCount)];
 	int *offset = new int[static_cast<int> (edgeCount)];
 	T *message = new T[static_cast<int> (edgeCount)];

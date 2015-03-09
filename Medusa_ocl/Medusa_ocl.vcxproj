@@ -25,6 +25,7 @@
     <ClInclude Include="basic.hpp" />
     <ClInclude Include="cmdoptions.hpp" />
     <ClInclude Include="cmdparser.hpp" />
+    <ClInclude Include="common.hpp" />
     <ClInclude Include="edge.hpp" />
     <ClInclude Include="edge_aa.hpp" />
     <ClInclude Include="edge_aos.hpp" />

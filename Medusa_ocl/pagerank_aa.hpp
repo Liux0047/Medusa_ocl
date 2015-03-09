@@ -7,6 +7,8 @@
 #include "edge_aa.hpp"
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
+#include "common.hpp"
+
 
 //construct the data from the file
 template <typename T>
@@ -17,61 +19,25 @@ void constructDataAA(
 	EdgeArrayAA<T> &edgeArray
 	) {
 
-	ifstream inDataFile("data/small-sample.txt", ios::in);
+	cout << "Constructing data" << endl;
 
-	if (!inDataFile) {
-		cerr << "File could not be opened" << endl;
-		exit(1);
-	}
-
-	// first line is the vertex rank
-	cout << "Initialize vertices \n";
-	T *vertex_rank = new T[static_cast<int> (vertexCount)];
-	for (int i = 0; i < vertexCount; i++) {
-		inDataFile >> vertex_rank[i];
-	}
+	T *vertex_rank = new T[static_cast<int> (vertexCount)];	
 	vertexArray.vertex_rank = vertex_rank;
 
-	//determine the edge counts
-	long edgeStartLocation = inDataFile.tellg();
-
-	int hasEdge;
-	while (!inDataFile.eof()) {
-		inDataFile >> hasEdge;
-		// 1 means edge exits; 0 otherwise
-		if (hasEdge == 1) {
-			edgeCount += hasEdge;
-		}
+	T rank;
+	srand(time(NULL));
+	for (size_t i = 0; i < vertexCount; ++i)
+	{
+		// Fill the vertex with random values from range [1, 100]
+		rank = (rand() % 100) + 1;
+		vertexArray.vertex_rank[i] = rank;
 	}
-
-	//rewind to edge starting position
-	inDataFile.clear();
-	inDataFile.seekg(edgeStartLocation);
-
-	//dynamic allocate a 2D array
-	int** edge = new int*[vertexCount];
-	for (int i = 0; i < vertexCount; ++i) {
-		edge[i] = new int[vertexCount];
-	}
-
-
-	//read into the edge [][] array 
-	int rowNum = 0;		//row number is the head vertex
-	int colNum = 0;		//col number is the tail vertex
-	while (inDataFile >> hasEdge && rowNum < vertexCount) {	//read till EOF and close the file
-		edge[rowNum][colNum] = hasEdge;
-		colNum++;
-		if (colNum % vertexCount == 0) {	//next line
-			colNum = 0;
-			rowNum++;
-		}
-	}
-
+	
 	//initialize edges
 	int *tail_vertex = new int[static_cast<int> (edgeCount)];
 	T *message = new T[static_cast<int> (edgeCount)];
 	int *vertex_edge_count = new int[static_cast<int> (vertexCount)];
-	int *vertex_edge_start = new int[static_cast<int> (vertexCount)];
+	unsigned long *vertex_edge_start = new unsigned long[static_cast<int> (vertexCount)];
 
 	for (size_t i = 0; i < edgeCount; i++) {
 		tail_vertex[i] = 0;
@@ -87,19 +53,22 @@ void constructDataAA(
 	vertexArray.edge_count = vertex_edge_count;
 	vertexArray.start = vertex_edge_start;
 
-
+	int *quota = generateQuota<T>(vertexCount, edgeCount);
 	//read the edges in AA format
 	int edgeIndex = 0;
-	for (int row = 0; row < vertexCount; row++){
-		vertexArray.start[row] = edgeIndex;
-		vertexArray.edge_count[row] = 0;
-		for (int col = 0; col < vertexCount; col++){
-			if (edge[row][col] == 1){
-				vertexArray.edge_count[row] ++;
-				edgeArray.tail_vertex[edgeIndex] = col;
-				edgeIndex++;
-			}
+	for (int head = 0; head < vertexCount; head++){
+		vertexArray.start[head] = edgeIndex;
+		vertexArray.edge_count[head] = quota[head];
+		for (int i = edgeIndex; i < edgeIndex + quota[head]; i++){
+			int tail = 0;
+			do {
+				// avoids self pointing edges
+				tail = rand() % vertexCount;
+			} while (tail == head);
+
+			edgeArray.tail_vertex[i] = tail;
 		}
+		edgeIndex += quota[head];
 	}
 	
 
