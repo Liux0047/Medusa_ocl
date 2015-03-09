@@ -71,29 +71,30 @@ void constructDataAA(
 		edgeIndex += quota[head];
 	}
 	
-
-	//output for test
-	cout << "Vertex rank:" << endl;
-	for (int i = 0; i < vertexCount; i++) {
-		cout << vertexArray.vertex_rank[i] << " ";
+	if (vertexCount <= 4){
+		//output for test
+		cout << "Vertex rank:" << endl;
+		for (int i = 0; i < vertexCount; i++) {
+			cout << vertexArray.vertex_rank[i] << " ";
+		}
+		cout << endl;
+		cout << "Tail vertex:" << endl;
+		for (int i = 0; i < edgeCount; i++) {
+			cout << edgeArray.tail_vertex[i] << " ";
+		}
+		cout << endl;
+		cout << "number of edges on each vertex" << endl;
+		for (int i = 0; i < vertexCount; i++) {
+			cout << vertexArray.edge_count[i] << " ";
+		}
+		cout << endl;
+		cout << "Start position:" << endl;
+		for (int i = 0; i < vertexCount; i++) {
+			cout << vertexArray.start[i] << " ";
+		}
+		cout << endl;
 	}
-	cout << endl;
-	cout << "Tail vertex:" << endl;
-	for (int i = 0; i < edgeCount; i++) {
-		cout << edgeArray.tail_vertex[i] << " ";
-	}
-	cout << endl;
-	cout << "number of edges on each vertex" << endl;
-	for (int i = 0; i < vertexCount; i++) {
-		cout << vertexArray.edge_count[i] << " ";
-	}
-	cout << endl;
-	cout << "Start position:" << endl;
-	for (int i = 0; i < vertexCount; i++) {
-		cout << vertexArray.start[i] << " ";
-	}
-	cout << endl;
-
+	
 }
 
 
@@ -192,14 +193,6 @@ void medusa(
 		);
 	SAMPLE_CHECK_ERRORS(err);
 
-	cl_mem vertex_rank_output_buffer = clCreateBuffer(
-		oclobjects.context,
-		CL_MEM_READ_WRITE,
-		vertex_rank_memory_size,
-		NULL,
-		&err
-		);
-	SAMPLE_CHECK_ERRORS(err);
 
 
 
@@ -229,7 +222,7 @@ void medusa(
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(combineKernel.kernel, 3, sizeof(cl_mem), &vertex_edge_start_buffer);
 	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(combineKernel.kernel, 4, sizeof(cl_mem), &vertex_rank_output_buffer);
+	err = clSetKernelArg(combineKernel.kernel, 4, sizeof(cl_mem), &vertex_rank_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 
 	// -----------------------------------------------------------------------
@@ -249,12 +242,11 @@ void medusa(
 	// Loop with the kernel invocation
 	// -----------------------------------------------------------------------
 
+	// Here we start measuring host time for kernel execution
+	double start = time_stamp();
+	cout << "Invoking kernel \n";
 	for (int i = 0; i < cmdparser.iterations.getValue(); i++)
 	{
-		// Here we start measuring host time for kernel execution
-		double start = time_stamp();
-
-		cout << "Invoking kernel \n";
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
 			sendMsgKernel.kernel,
@@ -264,23 +256,6 @@ void medusa(
 			NULL,
 			0, 0, 0
 			);
-
-		//read the output message on edges
-		clEnqueueReadBuffer(
-			oclobjects.queue,
-			edge_msg_buffer,
-			CL_TRUE,
-			0,
-			edge_msg_memory_size,
-			edgeArray.message,
-			0, NULL, NULL
-			);
-
-		cout << "After send message kernel\n";
-		for (size_t i = 0; i < edge_count; i++){
-			cout << edgeArray.message[i] << " ";
-		}
-		cout << endl;
 
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
@@ -292,42 +267,44 @@ void medusa(
 			0, 0, 0
 			);
 
-		//read the output ranks on vertices
-		clEnqueueReadBuffer(
-			oclobjects.queue,
-			vertex_rank_output_buffer,
-			CL_TRUE,
-			0,
-			vertex_rank_memory_size,
-			vertexArray.vertex_rank,
-			0, NULL, NULL
-			);
-
-		SAMPLE_CHECK_ERRORS(err);
+		
 
 		err = clFinish(oclobjects.queue);
 		SAMPLE_CHECK_ERRORS(err);
 
 
-		// It is important to measure end host time after clFinish call
-		double end = time_stamp();
-
-		double time = end - start;
-		cout << "Host time: " << time << " sec.\n";
-
 	}
+	// It is important to measure end host time after clFinish call
+	double end = time_stamp();
+
+	double time = end - start;
+	cout << "Host time: " << time << " sec.\n";
+
+	//read the output ranks on vertices
+	clEnqueueReadBuffer(
+		oclobjects.queue,
+		vertex_rank_buffer,
+		CL_TRUE,
+		0,
+		vertex_rank_memory_size,
+		vertexArray.vertex_rank,
+		0, NULL, NULL
+		);
+
+	SAMPLE_CHECK_ERRORS(err);
 
 	// deallocated resources
 	clReleaseMemObject(vertex_rank_buffer);
 	clReleaseMemObject(vertex_edge_count_buffer);
 	clReleaseMemObject(edge_msg_buffer);
-	clReleaseMemObject(vertex_rank_output_buffer);
 
-	cout << "Vertex rank after Medusa:" << endl;
-	for (int i = 0; i < static_cast<int> (vertex_count); i++) {
-		cout << vertexArray.vertex_rank[i] << " ";
+	if (vertex_count <= 4) {
+		cout << "Vertex rank after Medusa:" << endl;
+		for (int i = 0; i < static_cast<int> (vertex_count); i++) {
+			cout << vertexArray.vertex_rank[i] << " ";
+		}
+
 	}
-
 	breakPoint();
 
 }
