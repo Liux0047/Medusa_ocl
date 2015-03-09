@@ -48,7 +48,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
 		"edge_count",
 		"<integer>",
 		"Number of edges.",
-		400000
+		3200000
 	),
     iterations(
         *this,
