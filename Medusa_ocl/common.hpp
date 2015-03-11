@@ -2,6 +2,10 @@
 #define COMMON_H_
 
 
+#include <iostream>
+#include <stdlib.h>
+using namespace std;
+
 void breakPoint() {
 	int continue_key;
 	cout << "Press any key to continue Medusa...";
