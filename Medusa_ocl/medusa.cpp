@@ -36,19 +36,10 @@
 #include "oclobject.hpp"
 #include "pagerank_aos.hpp"
 
-#define AOS true
 
 using namespace std;
 
 
-//count the number of edges
-wstring clFileName = L"pagerank_aos.cl";
-
-void breakPoint () {
-	int continue_key;
-	cout << "Press any key to continue Medusa...";
-	cin >> continue_key;
-}
 
 int *makePageRankVertices(int vertexCount) {
 	int *ranks = new int[vertexCount];
@@ -112,44 +103,10 @@ int main (int argc, const char** argv)
         );
 
 
-        // Form build options string from given parameters: macros definitions to pass into kernels
-		string build_options =
-			"-DT=" + cmdparser.arithmetic.getValue();
-			/*  +
-			(cmdparser.arithmetic_double.isSet() ? " -DSAMPLE_NEEDS_DOUBLE" : "") +
-            " -DTILE_SIZE_M=" + to_str(cmdparser.tile_size_M.getValue()) +
-            " -DTILE_GROUP_M=" + to_str(cmdparser.tile_group_M.getValue()) +
-            " -DTILE_SIZE_N=" + to_str(cmdparser.tile_size_N.getValue()) +
-            " -DTILE_GROUP_N=" + to_str(cmdparser.tile_group_N.getValue()) +
-            " -DTILE_SIZE_K=" + to_str(cmdparser.tile_size_K.getValue());
-			*/
-
-        cout << "Build program options: " << inquotes(build_options) << "\n";
-
-        // Build kernel
-		cout << "build send message kernel \n";
-        OpenCLProgramOneKernel sendMsgKernel(
-            oclobjects,
-            clFileName,
-            "",
-            "send_msg",
-            build_options
-        );
-
-		cout << "build combine message kernel \n";
-		OpenCLProgramOneKernel combineKernel(
-			oclobjects,
-			clFileName,
-			"",
-			"combine",
-			build_options
-			);
-
-
 		size_t vertexCount = cmdparser.vertex_count.getValue();
 		size_t edgeCount = cmdparser.edge_count.getValue();
 
-		invokeMedusa(cmdparser, vertexCount, edgeCount, oclobjects, sendMsgKernel, combineKernel);
+		invokeMedusa(cmdparser, vertexCount, edgeCount, oclobjects);
 		
         return 0;
     }

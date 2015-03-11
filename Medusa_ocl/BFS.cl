@@ -44,7 +44,6 @@
 __kernel void traverse (
 	global int *head_vertex,
 	global int *tail_vertex,
-	global int *edge_offset_list,
 	global T *level_list,
 	int super_step
 )

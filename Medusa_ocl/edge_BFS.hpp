@@ -4,7 +4,6 @@
 #define LAST_OUT_EDGE -1
 // Edge Array
 // using column-major adjacency array
-template <typename T>
 struct EdgeArray {
 	int *head_vertex;
 

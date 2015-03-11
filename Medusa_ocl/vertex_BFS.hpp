@@ -2,10 +2,11 @@
 #define VERTEX_BFS_H_
 
 
-template <typename T>
 struct VertexArray {
 
 	int *level;
+
+	int *edge_count;
 };
 
 #endif  // VERTEX_H_
