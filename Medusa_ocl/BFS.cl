@@ -38,20 +38,32 @@
 
 
 // sendMsg function
+// edge_count_list is the list of edge counts in VertexArray
+// rank_list is the list of vertex ranks in VertexArray
+// edge_msg_list is the pointer to a list of edge messages
 // edge_offset_list is the pointer to a list of edge offsets as in CAA layout
 __kernel void send_msg (
-	global T *edge_weight_list,
-	global T *row_weights,
-	global T *col_weights,
-	int vertex_count,
-	int k
+	global T *rank_list,
+	global int *edge_count,
+	global int *edge_offset_list,
+	global T *edge_msg_list
 )
 {
 	int id = get_global_id(0);
 		
-	col_weights[id] = edge_weight_list[k * vertex_count + id];
-	row_weights[id] = edge_weight_list[id *vertex_count + k];
-		
+	T msg = (rank_list[id] + edge_count[id]/2) / edge_count[id];	//round to nearest integer
+
+	//broadcast to all out edges
+	//edge list stored in CAA format	
+	int edge_id = id;
+	
+	while (edge_offset_list[edge_id] != -1) { 
+		edge_msg_list[edge_id] = msg;
+		edge_id += edge_offset_list[edge_id];
+	} 	
+	edge_msg_list[edge_id] = msg;
+	
+	
 }
 
 
@@ -59,22 +71,31 @@ __kernel void send_msg (
  * combine messages from edges
  */
 __kernel void combine (
-	global T *edge_weight_list,
-	global T *row_weights,
-	global T *col_weights,
-	int vertex_count
+	global int *tail_vertex,
+	global T *edge_msg_list,
+	global int *edge_offset_list,
+	global T *rank_list_output
 )
 {	
 
-	int row = get_global_id(0);
-    int col = get_global_id(1);
 
-	int row_weight = row_weights[col];
-	int col_weight = col_weights[row];
+	int id = get_global_id(0);
+	
+	int edge_id = id;
+	int offset = edge_offset_list[id];
+	rank_list_output[id] = 0;
 
-    if(row_weight != -1 && col_weight != -1) { 
-        int sum =  (row_weight + col_weight);
-        if (edge_weight_list[col * vertex_count + row] == -1 || sum < edge_weight_list[col * vertex_count + row])
-            edge_weight_list[col * vertex_count + row] = sum;
-    }
+	 while (edge_offset_list[edge_id] != -1) { 
+
+		// atomic add floats
+		//while ( atom_cmpxchg( mutex[ tail_vertex[edge_id] ], 0 ,1 ) );
+		atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
+		//atom_xchg ( mutex[ tail_vertex[edge_id] ], 0 );
+		
+		edge_id += edge_offset_list[edge_id];
+	};
+	atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
+	
+
+	
 }

@@ -38,20 +38,29 @@
 
 
 // sendMsg function
+// edge_count_list is the list of edge counts in VertexArray
+// rank_list is the list of vertex ranks in VertexArray
+// edge_msg_list is the pointer to a list of edge messages
 // edge_offset_list is the pointer to a list of edge offsets as in CAA layout
 __kernel void send_msg (
-	global T *edge_weight_list,
-	global T *row_weights,
-	global T *col_weights,
-	int vertex_count,
-	int k
+	global T *rank_list,
+	global int *edge_count,
+	global int *edge_start_pos,
+	global T *edge_msg_list
 )
 {
 	int id = get_global_id(0);
 		
-	row_weights[id] = edge_weight_list[k * vertex_count + id];
-	col_weights[id] = edge_weight_list[id *vertex_count + k];
+	T msg = (rank_list[id] + edge_count[id]/2) / edge_count[id];	//round to nearest integer
+
+	//broadcast to all out edges
+	//edge list stored in AA format		
+	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
+		edge_msg_list[edge_start_pos[id] + edge_local_index] = msg;
+	}
+
 		
+	
 }
 
 
@@ -59,22 +68,22 @@ __kernel void send_msg (
  * combine messages from edges
  */
 __kernel void combine (
-	global T *edge_weight_list,
-	global T *row_weights,
-	global T *col_weights,
-	int vertex_count
+	global int *tail_vertex,
+	global T *edge_msg_list,
+	global int *edge_count,
+	global int *edge_start_pos,
+	global T *rank_list_output
 )
 {	
 
-	int row = get_global_id(0);
-    int col = get_global_id(1);
+	int id = get_global_id(0);
+	
+	rank_list_output[id] = 0;
 
-	int row_weight = row_weights[col];
-	int col_weight = col_weights[row];
-
-    if(row_weight != -1 && col_weight != -1) { 
-        int sum =  (row_weight + col_weight);
-        if (edge_weight_list[row * vertex_count + col] == -1 || sum < edge_weight_list[row * vertex_count + col])
-            edge_weight_list[row * vertex_count + col] = sum;
-    }
+	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
+		int edge_id = edge_start_pos[id] + edge_local_index;
+		atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
+	}
+	
+	
 }
