@@ -30,6 +30,7 @@
     <ClInclude Include="edge_aa.hpp" />
     <ClInclude Include="edge_aos.hpp" />
     <ClInclude Include="edge_BFS.hpp" />
+    <ClInclude Include="edge_BFS_aa.hpp" />
     <ClInclude Include="oclobject.hpp" />
     <ClInclude Include="pagerank.hpp" />
     <ClInclude Include="pagerank_aa.hpp" />
@@ -38,6 +39,7 @@
     <ClInclude Include="vertex_BFS.hpp" />
     <ClInclude Include="vertex_aa.hpp" />
     <ClInclude Include="vertex_aos.hpp" />
+    <ClInclude Include="vertex_BFS_aa.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp" />

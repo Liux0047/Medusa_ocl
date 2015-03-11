@@ -36,54 +36,33 @@
     #pragma OPENCL EXTENSION cl_khr_fp64: enable
 #endif
 
-
-// sendMsg function
-// edge_count_list is the list of edge counts in VertexArray
-// rank_list is the list of vertex ranks in VertexArray
-// edge_msg_list is the pointer to a list of edge messages
-// edge_offset_list is the pointer to a list of edge offsets as in CAA layout
-__kernel void send_msg (
-	global T *rank_list,
-	global int *edge_count,
-	global int *edge_start_pos,
-	global T *edge_msg_list
-)
-{
-	int id = get_global_id(0);
-		
-	T msg = (rank_list[id] + edge_count[id]/2) / edge_count[id];	//round to nearest integer
-
-	//broadcast to all out edges
-	//edge list stored in AA format		
-	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
-		edge_msg_list[edge_start_pos[id] + edge_local_index] = msg;
-	}
-
-		
-	
-}
-
+#define INIT_LEVEL -1
 
 /*
- * combine messages from edges
+ * Traverse the edges to update level
  */
-__kernel void combine (
+__kernel void traverse (
+	global int *head_vertex,
 	global int *tail_vertex,
-	global T *edge_msg_list,
-	global int *edge_count,
-	global int *edge_start_pos,
-	global T *rank_list_output
+	global int *level_list,
+	int super_step,
+	global bool *halt
 )
 {	
-
+	
 	int id = get_global_id(0);
-	
-	rank_list_output[id] = 0;
 
-	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
-		int edge_id = edge_start_pos[id] + edge_local_index;
-		atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
+	int head_vertex_id = head_vertex[id];
+	int tail_vertex_id = tail_vertex[id];
+
+	if (level_list[head_vertex_id] == super_step)
+	{
+		if(level_list[tail_vertex_id] == INIT_LEVEL)
+		{
+			level_list[tail_vertex_id] = super_step + 1;
+			*halt = false;
+		}
 	}
-	
+
 	
 }

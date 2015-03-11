@@ -40,7 +40,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
         "vertex_count",
         "<integer>",
         "Number of vertices.",
-		6
+		4
     ),
 	edge_count(
 		*this,
@@ -48,7 +48,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
 		"edge_count",
 		"<integer>",
 		"Number of edges.",
-		8
+		6
 	),
     iterations(
         *this,

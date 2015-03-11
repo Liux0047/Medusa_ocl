@@ -363,7 +363,7 @@ void invokeMedusa(CmdParserMedusa cmdparser,
 
 	// Build kernel
 	cout << "build traverse kernel \n";
-	OpenCLProgramOneKernel traverse(
+	OpenCLProgramOneKernel traverseKernel(
 		oclobjects,
 		clFileName,
 		"",
@@ -378,7 +378,7 @@ void invokeMedusa(CmdParserMedusa cmdparser,
 		VertexArray vertexArray;
 		EdgeArray edgeArray;
 		constructData(vertex_count, edgeCount, vertexArray, edgeArray);
-		medusa(cmdparser, oclobjects, traverse, vertex_count, edgeCount, vertexArray, edgeArray);
+		medusa(cmdparser, oclobjects, traverseKernel, vertex_count, edgeCount, vertexArray, edgeArray);
 	}
 }
 

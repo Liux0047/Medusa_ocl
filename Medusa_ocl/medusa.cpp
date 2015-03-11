@@ -34,7 +34,7 @@
 #include "basic.hpp"
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
-#include "BFS.hpp"
+#include "BFS_aa.hpp"
 
 
 using namespace std;
