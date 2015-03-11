@@ -166,27 +166,15 @@ void medusa(
 		);
 	SAMPLE_CHECK_ERRORS(err);
 
-	bool halt = false;
 	cl_mem halt_buffer = clCreateBuffer(
 		oclobjects.context,
-		CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+		CL_MEM_READ_WRITE,
 		sizeof(bool),
-		&halt,
+		NULL,
 		&err
 		);
 	SAMPLE_CHECK_ERRORS(err);
 
-	clEnqueueMapBuffer(
-		oclobjects.queue,
-		halt_buffer,
-		CL_TRUE,    // blocking map
-		CL_MAP_READ,
-		0,
-		sizeof(bool),
-		0, 0, 0,
-		&err
-		);
-	SAMPLE_CHECK_ERRORS(err);
 
 
 	// -----------------------------------------------------------------------
@@ -218,7 +206,19 @@ void medusa(
 	// Loop with the kernel invocation
 	// -----------------------------------------------------------------------
 	// Here we start measuring host time for kernel execution
+	void *mappedhalt = clEnqueueMapBuffer(
+		oclobjects.queue,
+		halt_buffer,
+		CL_TRUE,    // blocking map
+		CL_MAP_READ,
+		0,
+		sizeof(bool),
+		0, 0, 0,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
 
+	bool halt = false;
 	double start = time_stamp();
 	cout << "Invoking kernel \n";
 	for (int i = 0; i < cmdparser.iterations.getValue(); i++)
@@ -227,6 +227,8 @@ void medusa(
 
 		while (!halt){
 			halt = true;
+
+			memcpy(mappedhalt, &halt, sizeof(bool));
 
 			err = clSetKernelArg(traverseKernel.kernel, 2, sizeof(int), &superStep);
 			SAMPLE_CHECK_ERRORS(err);
@@ -246,6 +248,8 @@ void medusa(
 			err = clFinish(oclobjects.queue);
 			SAMPLE_CHECK_ERRORS(err);
 
+			memcpy(&halt, mappedhalt, sizeof(bool));
+
 			superStep++;
 
 		}
@@ -261,7 +265,7 @@ void medusa(
 	err = clEnqueueUnmapMemObject(
 		oclobjects.queue,
 		halt_buffer,
-		&halt,
+		mappedhalt,
 		0, 0, 0
 		);
 	SAMPLE_CHECK_ERRORS(err);
