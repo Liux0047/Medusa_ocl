@@ -78,6 +78,12 @@
     <ClInclude Include="edge_BFS_aa.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vertex_BFS_aos.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="edge_BFS_aos.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basic.cpp">

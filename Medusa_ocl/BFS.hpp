@@ -52,7 +52,6 @@ void constructData(
 		offset[i] = 0;
 	}
 
-
 	edgeArray.head_vertex = head_vertex;
 	edgeArray.tail_vertex = tail_vertex;
 	edgeArray.offset = offset;
@@ -206,28 +205,14 @@ void medusa(
 		);
 	SAMPLE_CHECK_ERRORS(err);
 	
-	bool halt = false;
 	cl_mem halt_buffer = clCreateBuffer(
 		oclobjects.context,
-		CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+		CL_MEM_READ_WRITE,
 		sizeof(bool),
-		&halt,
+		NULL,
 		&err
 		);
 	SAMPLE_CHECK_ERRORS(err);
-
-	clEnqueueMapBuffer(
-		oclobjects.queue,
-		halt_buffer,
-		CL_TRUE,    // blocking map
-		CL_MAP_READ,
-		0,
-		sizeof(bool),
-		0, 0, 0,
-		&err
-		);
-	SAMPLE_CHECK_ERRORS(err);
-
 	
 	
 
@@ -262,15 +247,31 @@ void medusa(
 	// -----------------------------------------------------------------------
 	// Loop with the kernel invocation
 	// -----------------------------------------------------------------------
+
+	void *mappedhalt = clEnqueueMapBuffer(
+		oclobjects.queue,
+		halt_buffer,
+		CL_TRUE,    // blocking map
+		CL_MAP_READ,
+		0,
+		sizeof(bool),
+		0, 0, 0,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
+
+	bool halt = false;
 	cout << "Invoking kernel \n";
 	double start = time_stamp();
-	
+
 	for (int i = 0; i < cmdparser.iterations.getValue(); i++)
 	{
 		int superStep = 0;
 
 		while (!halt){
 			halt = true;
+
+			memcpy(mappedhalt, &halt, sizeof(bool));
 
 			err = clSetKernelArg(traverseKernel.kernel, 3, sizeof(int), &superStep);
 			SAMPLE_CHECK_ERRORS(err);
@@ -289,6 +290,8 @@ void medusa(
 
 			err = clFinish(oclobjects.queue);
 			SAMPLE_CHECK_ERRORS(err);
+						
+			memcpy(&halt, mappedhalt, sizeof(bool));
 			
 			superStep++;
 
@@ -305,7 +308,7 @@ void medusa(
 	err = clEnqueueUnmapMemObject(
 		oclobjects.queue,
 		halt_buffer,
-		&halt,
+		mappedhalt,
 		0, 0, 0
 		);
 	SAMPLE_CHECK_ERRORS(err);
