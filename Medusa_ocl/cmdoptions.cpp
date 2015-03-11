@@ -59,7 +59,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
             "performance information will be printed. "
             "Zero is allowed: in this case no kernel invocation "
             " is performed but all other host stuff is created.",
-        7
+        1
     ),
     arithmetic(
         *this,

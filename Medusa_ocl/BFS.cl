@@ -45,7 +45,8 @@ __kernel void traverse (
 	global int *head_vertex,
 	global int *tail_vertex,
 	global int *level_list,
-	int super_step
+	int super_step,
+	global bool *halt
 )
 {	
 	
@@ -59,6 +60,7 @@ __kernel void traverse (
 		if(level_list[tail_vertex_id] == INIT_LEVEL)
 		{
 			level_list[tail_vertex_id] = super_step + 1;
+			*halt = false;
 		}
 	}
 

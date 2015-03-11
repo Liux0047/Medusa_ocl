@@ -205,8 +205,31 @@ void medusa(
 		&err
 		);
 	SAMPLE_CHECK_ERRORS(err);
+	
+	bool halt = false;
+	cl_mem halt_buffer = clCreateBuffer(
+		oclobjects.context,
+		CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+		sizeof(bool),
+		&halt,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
 
+	clEnqueueMapBuffer(
+		oclobjects.queue,
+		halt_buffer,
+		CL_TRUE,    // blocking map
+		CL_MAP_READ,
+		0,
+		sizeof(bool),
+		0, 0, 0,
+		&err
+		);
+	SAMPLE_CHECK_ERRORS(err);
 
+	
+	
 
 
 	// -----------------------------------------------------------------------
@@ -218,6 +241,8 @@ void medusa(
 	err = clSetKernelArg(traverseKernel.kernel, 1, sizeof(cl_mem), &edge_tail_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(traverseKernel.kernel, 2, sizeof(cl_mem), &vertex_level_buffer);
+	SAMPLE_CHECK_ERRORS(err);
+	err = clSetKernelArg(traverseKernel.kernel, 4, sizeof(cl_mem), &halt_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 
 
@@ -239,27 +264,36 @@ void medusa(
 	// -----------------------------------------------------------------------
 	cout << "Invoking kernel \n";
 	double start = time_stamp();
-
-	for (int superStep = 0; superStep < cmdparser.iterations.getValue(); superStep++)
+	
+	for (int i = 0; i < cmdparser.iterations.getValue(); i++)
 	{
+		int superStep = 0;
 
-		err = clSetKernelArg(traverseKernel.kernel, 3, sizeof(int), &superStep);
-		SAMPLE_CHECK_ERRORS(err);
+		while (!halt){
+			halt = true;
 
-		// Here we start measuring host time for kernel execution
-		err = clEnqueueNDRangeKernel(
-			oclobjects.queue,
-			traverseKernel.kernel,
-			1,
-			0,
-			global_size,
-			NULL,
-			0, 0, 0
-			);
-		SAMPLE_CHECK_ERRORS(err);
+			err = clSetKernelArg(traverseKernel.kernel, 3, sizeof(int), &superStep);
+			SAMPLE_CHECK_ERRORS(err);
+			
+			// Here we start measuring host time for kernel execution
+			err = clEnqueueNDRangeKernel(
+				oclobjects.queue,
+				traverseKernel.kernel,
+				1,
+				0,
+				global_size,
+				NULL,
+				0, 0, 0
+				);
+			SAMPLE_CHECK_ERRORS(err);
 
-		err = clFinish(oclobjects.queue);
-		SAMPLE_CHECK_ERRORS(err);
+			err = clFinish(oclobjects.queue);
+			SAMPLE_CHECK_ERRORS(err);
+			
+			superStep++;
+
+		} 
+		
 
 	}
 	// It is important to measure end host time after clFinish call
@@ -267,6 +301,14 @@ void medusa(
 
 	double time = end - start;
 	cout << "Host time: " << time << " sec.\n";
+
+	err = clEnqueueUnmapMemObject(
+		oclobjects.queue,
+		halt_buffer,
+		&halt,
+		0, 0, 0
+		);
+	SAMPLE_CHECK_ERRORS(err);
 
 	//read the output ranks on vertices
 	clEnqueueReadBuffer(
@@ -280,6 +322,7 @@ void medusa(
 		);
 
 	SAMPLE_CHECK_ERRORS(err);
+
 
 	// deallocated resources
 	clReleaseMemObject(vertex_level_buffer);
