@@ -12,7 +12,7 @@
 
 using namespace std;
 
-wstring clFileName = L"pagerank_aos.cl";
+wstring clFileName = L"BFS.cl";
 
 //construct the data from the file
 void constructData(
@@ -35,9 +35,10 @@ void constructData(
 
 	for (size_t i = 0; i < vertexCount; ++i)
 	{
-		vertexArray.edge_count = 0;
+		vertexArray.edge_count[i] = 0;
 		vertexArray.level[i] = INIT_LEVEL;
 	}
+	vertexArray.level[0] = 0;
 
 
 	//initialize edges
@@ -102,7 +103,7 @@ void constructData(
 	delete[] last_edge_pos;
 
 
-	if (vertexCount <= 4){
+	if (vertexCount <= 6){
 		//output for test
 		cout << "Vertex level:" << endl;
 		for (int i = 0; i < vertexCount; i++) {
@@ -211,15 +212,12 @@ void medusa(
 	// -----------------------------------------------------------------------
 	// Setting kernel arguments for traverseKernel
 	// -----------------------------------------------------------------------
-	int superStep = 0;
-
+	
 	err = clSetKernelArg(traverseKernel.kernel, 0, sizeof(cl_mem), &edge_head_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(traverseKernel.kernel, 1, sizeof(cl_mem), &edge_tail_buffer);
 	SAMPLE_CHECK_ERRORS(err);
 	err = clSetKernelArg(traverseKernel.kernel, 2, sizeof(cl_mem), &vertex_level_buffer);
-	SAMPLE_CHECK_ERRORS(err);
-	err = clSetKernelArg(traverseKernel.kernel, 3, sizeof(int), &superStep);
 	SAMPLE_CHECK_ERRORS(err);
 
 
@@ -240,10 +238,14 @@ void medusa(
 	// Loop with the kernel invocation
 	// -----------------------------------------------------------------------
 	cout << "Invoking kernel \n";
-
 	double start = time_stamp();
+
 	for (int superStep = 0; superStep < cmdparser.iterations.getValue(); superStep++)
 	{
+
+		err = clSetKernelArg(traverseKernel.kernel, 3, sizeof(int), &superStep);
+		SAMPLE_CHECK_ERRORS(err);
+
 		// Here we start measuring host time for kernel execution
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
@@ -284,7 +286,7 @@ void medusa(
 	clReleaseMemObject(edge_head_buffer);
 	clReleaseMemObject(edge_tail_buffer);
 
-	if (vertex_count <= 4) {
+	if (vertex_count <= 6) {
 		cout << "Vertex level after Medusa:" << endl;
 		for (int i = 0; i < static_cast<int> (vertex_count); i++) {
 			cout << vertexArray.level[i] << " ";

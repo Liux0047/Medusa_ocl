@@ -44,7 +44,7 @@
 __kernel void traverse (
 	global int *head_vertex,
 	global int *tail_vertex,
-	global T *level_list,
+	global int *level_list,
 	int super_step
 )
 {	
@@ -52,7 +52,7 @@ __kernel void traverse (
 	int id = get_global_id(0);
 
 	int head_vertex_id = head_vertex[id];
-	int tail_vertex_id = tail_vertex[id]
+	int tail_vertex_id = tail_vertex[id];
 
 	if (level_list[head_vertex_id] == super_step)
 	{
