@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="APSP.hpp" />
-    <ClInclude Include="APSP_aa.hpp" />
-    <ClInclude Include="APSP_aos.hpp" />
+    <ClInclude Include="BFS.hpp" />
+    <ClInclude Include="BFS_aa.hpp" />
+    <ClInclude Include="BFS_aos.hpp" />
     <ClInclude Include="basic.hpp" />
     <ClInclude Include="cmdoptions.hpp" />
     <ClInclude Include="cmdparser.hpp" />
@@ -29,11 +29,13 @@
     <ClInclude Include="edge.hpp" />
     <ClInclude Include="edge_aa.hpp" />
     <ClInclude Include="edge_aos.hpp" />
+    <ClInclude Include="edge_BFS.hpp" />
     <ClInclude Include="oclobject.hpp" />
     <ClInclude Include="pagerank.hpp" />
     <ClInclude Include="pagerank_aa.hpp" />
     <ClInclude Include="pagerank_aos.hpp" />
     <ClInclude Include="vertex.hpp" />
+    <ClInclude Include="vertex_BFS.hpp" />
     <ClInclude Include="vertex_aa.hpp" />
     <ClInclude Include="vertex_aos.hpp" />
   </ItemGroup>
@@ -45,11 +47,15 @@
     <ClCompile Include="oclobject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="APSP.cl">
+    <Intel_OpenCL_Build_Rules Include="BFS.cl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Intel_OpenCL_Build_Rules>
-    <Intel_OpenCL_Build_Rules Include="APSP_aa.cl">
+    <Intel_OpenCL_Build_Rules Include="BFS_aa.cl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Intel_OpenCL_Build_Rules>
+    <Intel_OpenCL_Build_Rules Include="BFS_aos.cl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Intel_OpenCL_Build_Rules>
