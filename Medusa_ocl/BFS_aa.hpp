@@ -1,6 +1,8 @@
 
-#ifndef _PAGERANK_AA_HPP_
-#define _PAGERANK_AA_HPP_
+#ifndef _BFS_AA_HPP_
+#define _BFS_AA_HPP_
+
+#include <cstring>
 
 //Medusa data structures
 #include "vertex_BFS_aa.hpp"
@@ -51,7 +53,6 @@ void constructDataAA(
 	for (size_t i = 0; i < edgeCount; i++) {
 		head_vertex[i] = 0;
 		tail_vertex[i] = 0;
-		start[i] = 0;
 	}
 
 	edgeArray.head_vertex = head_vertex;

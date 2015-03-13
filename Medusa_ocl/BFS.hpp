@@ -2,6 +2,8 @@
 #ifndef _BFS_HPP_
 #define _BFS_HPP_
 
+#include <cstring>
+
 //Medusa data structures
 #include "vertex_BFS.hpp"
 #include "edge_BFS.hpp"

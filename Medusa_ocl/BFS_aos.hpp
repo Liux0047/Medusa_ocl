@@ -1,8 +1,9 @@
 
-#ifndef _PAGERANK_AOS_HPP_
-#define _PAGERANK_AOS_HPP_
+#ifndef _BFS_AOS_HPP_
+#define _BFS_AOS_HPP_
 
 #include <CL/cl.h>
+#include <cstring>
 
 //Medusa data structures
 #include "vertex_BFS_aos.hpp"
