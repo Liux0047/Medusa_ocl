@@ -70,7 +70,7 @@ int* generateQuotaWithZero(int vertexCount, unsigned long totalCount) {
 		intSum += randomInput[i];
 	}
 	long remains = totalCount - intSum;
-	if (remains <= 0){
+	if (remains <= 0 || randomInput[0] <= 0){
 		cout << "Invalid sample generated \n";
 		breakPoint();
 	}
