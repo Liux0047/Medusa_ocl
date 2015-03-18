@@ -47,14 +47,22 @@ void constructData(
 
 	int *quota = generateQuota<T>(vertexCount, edgeCount);
 
+	int maxQuota = 0, maxQuotaId = 0;
 	unsigned long cellCount = 0;	//visualize in a matrix, number of cells that has been traversed
-	//bool duplicate = true;
+	
 	int head = 0;
-	for (size_t i = 0; i < edgeCount; ++i)
+	int numEdgeGenerated = 0;
+	while (numEdgeGenerated < edgeCount)
 	{
 		// Fill the edge with random values from range [0, vertex_count]
 		head = cellCount % vertexCount;
 		if (vertexArray[head].edge_count < quota[head]){
+
+			if (quota[head] > maxQuota) {
+				maxQuota = quota[head];
+				maxQuotaId = head;
+			}
+
 			int tail = 0;
 
 			do {
@@ -62,21 +70,21 @@ void constructData(
 				tail = rand() % vertexCount;
 			} while (tail == head);
 
-			edgeArray[i].tail_vertex = tail;
+			edgeArray[numEdgeGenerated].tail_vertex = tail;
 			vertexArray[head].edge_count++;
 
 			//record the offset
 			if (last_edge_pos[head] != -1) {
-				edgeArray[last_edge_pos[head]].offset = i - last_edge_pos[head];
+				edgeArray[last_edge_pos[head]].offset = numEdgeGenerated - last_edge_pos[head];
 			}
-			last_edge_pos[head] = i;
-		}
-		else {
-			i--;
+			last_edge_pos[head] = numEdgeGenerated;
+			numEdgeGenerated++;
 		}
 		cellCount++;
 
 	}
+
+	cout << "Max quota is " << maxQuota << " at position " << maxQuotaId << endl;
 
 	for (size_t i = 0; i < vertexCount; i++){
 		edgeArray[last_edge_pos[i]].offset = LAST_OUT_EDGE;
@@ -130,8 +138,8 @@ void medusa(
 	// -----------------------------------------------------------------------
 
 	cout
-		<< "Running Medusa"
-		<< " kernel with vertex count: " << vertex_count << "\n";
+		<< "Running Medusa PageRank AOS"
+		<< " kernel with edge count: " << edge_count << "\n";
 
 
 	size_t vertex_memory_size = vertex_count * sizeof(VertexAOS<T>);

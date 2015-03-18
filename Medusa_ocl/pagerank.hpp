@@ -153,8 +153,8 @@ void medusa(
 	// -----------------------------------------------------------------------
 
 	cout
-		<< "Running Medusa"
-		<< " kernel with vertex count: " << vertex_count << "\n";
+		<< "Running Medusa PageRank"
+		<< " kernel with edge count: " << edge_count << "\n";
 
 
 	size_t vertex_rank_memory_size = vertex_count * sizeof(T);

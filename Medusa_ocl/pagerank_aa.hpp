@@ -58,9 +58,16 @@ void constructDataAA(
 	int *quota = generateQuota<T>(vertexCount, edgeCount);
 	//read the edges in AA format
 	int edgeIndex = 0;
+	int maxQuota = 0, maxQuotaId = 0;
 	for (int head = 0; head < vertexCount; head++){
 		vertexArray.start[head] = edgeIndex;
 		vertexArray.edge_count[head] = quota[head];
+
+		if (quota[head] > maxQuota) {
+			maxQuota = quota[head];
+			maxQuotaId = head;
+		}
+
 		for (int i = edgeIndex; i < edgeIndex + quota[head]; i++){
 			int tail = 0;
 			do {
@@ -72,7 +79,9 @@ void constructDataAA(
 		}
 		edgeIndex += quota[head];
 	}
-	
+
+	cout << "Max quota is " << maxQuota << " at position " << maxQuotaId << endl;
+
 	if (vertexCount <= 4){
 		//output for test
 		cout << "Vertex rank:" << endl;
@@ -119,8 +128,8 @@ void medusa(
 	// -----------------------------------------------------------------------
 
 	cout
-		<< "Running Medusa"
-		<< " kernel with vertex count: " << vertex_count << "\n";
+		<< "Running Medusa PageRank AA"
+		<< " kernel with edge count: " << edge_count << "\n";
 
 
 	size_t vertex_rank_memory_size = vertex_count * sizeof(T);

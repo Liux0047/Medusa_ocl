@@ -54,7 +54,7 @@ int* generateQuota(int vertexCount, unsigned long totalCount) {
 
 
 template <typename T>
-int* generateQuotaWithZero(int vertexCount, int totalCount) {
+int* generateQuotaWithZero(int vertexCount, unsigned long totalCount) {
 	int *randomInput = new int[vertexCount];
 	unsigned long sum = 0;
 	for (int i = 0; i < vertexCount; i++){
@@ -65,15 +65,21 @@ int* generateQuotaWithZero(int vertexCount, int totalCount) {
 	//normalize
 	unsigned long intSum = 0;
 	int reserve = 0;
-	for (int i = 1; i < vertexCount; i++){
-		randomInput[i] = static_cast<T> ((randomInput[i] + 0.5) / coefficient);
+	for (int i = 0; i < vertexCount; i++){
+		randomInput[i] = static_cast<T> (randomInput[i] / coefficient);
 		intSum += randomInput[i];
 	}
-	randomInput[0] = totalCount - intSum;
-	if (randomInput[0] <= 0){
+	long remains = totalCount - intSum;
+	if (remains <= 0){
 		cout << "Invalid sample generated \n";
 		breakPoint();
 	}
+
+	for (int i = 0; i < remains; i++) {
+		int pos = rand() % vertexCount;
+		randomInput[pos]++;
+	}
+
 	return randomInput;
 }
 

@@ -66,12 +66,20 @@ void constructData(
 	int *quota = generateQuotaWithZero<int>(vertexCount, edgeCount);
 	unsigned long cellCount = 0;	//visualize in a matrix, number of cells that has been traversed
 	
-	int head = 0;
-	for (size_t i = 0; i < edgeCount; ++i)
+	int head = 0; 
+	int numEdgeGenerated = 0;
+	int maxQuota = 0, maxQuotaId = 0;
+	while (numEdgeGenerated < edgeCount)
 	{
 		// Fill the edge with random values from range [0, vertex_count]
 		head = cellCount % vertexCount;
 		if (vertexArray.edge_count[head] < quota[head]){
+
+			if (quota[head] > maxQuota) {
+				maxQuota = quota[head];
+				maxQuotaId = head;
+			}
+
 			int tail = 0;
 
 			do {
@@ -79,18 +87,16 @@ void constructData(
 				tail = rand() % vertexCount;
 			} while (tail == head);
 
-			edgeArray.head_vertex[i] = head;
-			edgeArray.tail_vertex[i] = tail;
+			edgeArray.head_vertex[numEdgeGenerated] = head;
+			edgeArray.tail_vertex[numEdgeGenerated] = tail;
 			vertexArray.edge_count[head]++;
 
 			//record the offset
 			if (last_edge_pos[head] != -1) {
-				edgeArray.offset[last_edge_pos[head]] = i - last_edge_pos[head];
+				edgeArray.offset[last_edge_pos[head]] = numEdgeGenerated - last_edge_pos[head];
 			}
-			last_edge_pos[head] = i;
-		}
-		else {
-			i--;
+			last_edge_pos[head] = numEdgeGenerated;
+			numEdgeGenerated++;
 		}
 		cellCount++;
 
@@ -103,6 +109,7 @@ void constructData(
 	//cleaning up
 	delete[] last_edge_pos;
 
+	cout << "Max quota is " << maxQuota << " at position " << maxQuotaId << endl;
 
 	if (vertexCount <= 6){
 		//output for test
@@ -147,8 +154,8 @@ void medusa(
 	// -----------------------------------------------------------------------
 
 	cout
-		<< "Running Medusa"
-		<< " kernel with vertex count: " << vertex_count << "\n";
+		<< "Running Medusa BFS"
+		<< " kernel with edge count: " << edge_count << "\n";
 
 
 	size_t vertex_level_memory_size = vertex_count * sizeof(int);
