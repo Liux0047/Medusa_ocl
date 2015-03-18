@@ -26,7 +26,7 @@ int* generateQuota(int vertexCount, int totalCount) {
 	unsigned long intSum = 0;
 	int reserve = 0;
 	for (int i = 1; i < vertexCount; i++){
-		randomInput[i] = static_cast<T> ((randomInput[i] + 0.5) / coefficient);
+		randomInput[i] = static_cast<T> ((randomInput[i] + coefficient / 2) / coefficient);
 		if (randomInput[i] == 0){
 			randomInput[i] = 1;
 			reserve++;
@@ -37,11 +37,17 @@ int* generateQuota(int vertexCount, int totalCount) {
 		}
 		intSum += randomInput[i];
 	}
-	randomInput[0] = totalCount - intSum;
+
+	int remains = totalCount - intSum;
 	if (randomInput[0] <= 0){
 		cout << "Invalid sample generated \n";
 		breakPoint();
 	}
+
+	for (int i = 0; i < remains; i++) {
+		randomInput[rand() % vertexCount]++;
+	}
+		
 	return randomInput;
 }
 

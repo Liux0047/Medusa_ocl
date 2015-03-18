@@ -64,34 +64,41 @@ void constructData(
 	int *quota = generateQuota<T>(vertexCount, edgeCount);
 	unsigned long cellCount = 0;	//visualize in a matrix, number of cells that has been traversed
 	int head = 0;
-	for (size_t i = 0; i < edgeCount; ++i)
+	int numEdgeGenerated = 0;
+	int maxQuota = 0, maxQuotaId = 0;
+	while (numEdgeGenerated < edgeCount)
 	{
 		// Fill the edge with random values from range [0, vertex_count]
 		head = cellCount % vertexCount;
 		if (vertexArray.edge_count[head] < quota[head]){
+			
+			if (quota[head] > maxQuota) {
+				maxQuota = quota[head];
+				maxQuotaId = head;
+			}
+			
 			int tail = 0;
 
 			do {
 				// avoids self pointing edges
 				tail = rand() % vertexCount;
 			} while (tail == head);
-			
-			edgeArray.tail_vertex[i] = tail;
+
+			edgeArray.tail_vertex[numEdgeGenerated] = tail;
 			vertexArray.edge_count[head]++;
 
 			//record the offset
 			if (last_edge_pos[head] != -1) {
-				edgeArray.offset[last_edge_pos[head]] = i - last_edge_pos[head];
+				edgeArray.offset[last_edge_pos[head]] = numEdgeGenerated - last_edge_pos[head];
 			}
-			last_edge_pos[head] = i;
-		}
-		else {
-			i--;
-		}
-		cellCount++;		
+			last_edge_pos[head] = numEdgeGenerated;
 
+			numEdgeGenerated++;
+		}
+
+		cellCount++;
 	}
-
+	
 	for (size_t i = 0; i < vertexCount; i++){
 		offset[last_edge_pos[i]] = LAST_OUT_EDGE;
 	}
@@ -99,6 +106,7 @@ void constructData(
 	//cleaning up
 	delete[] last_edge_pos;
 
+	cout << "Max quota is " << maxQuota << "at position " << maxQuotaId << endl;
 	
 	if (vertexCount <= 4){
 		//output for test
