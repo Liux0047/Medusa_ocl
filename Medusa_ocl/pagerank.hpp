@@ -106,7 +106,7 @@ void constructData(
 	//cleaning up
 	delete[] last_edge_pos;
 
-	cout << "Max quota is " << maxQuota << "at position " << maxQuotaId << endl;
+	cout << "Max quota is " << maxQuota << " at position " << maxQuotaId << endl;
 	
 	if (vertexCount <= 4){
 		//output for test

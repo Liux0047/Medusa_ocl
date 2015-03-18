@@ -14,7 +14,7 @@ void breakPoint() {
 
 
 template <typename T>
-int* generateQuota(int vertexCount, int totalCount) {
+int* generateQuota(int vertexCount, unsigned long totalCount) {
 	int *randomInput = new int[vertexCount];
 	unsigned long sum = 0;
 	for (int i = 0; i < vertexCount; i++){
@@ -25,8 +25,8 @@ int* generateQuota(int vertexCount, int totalCount) {
 	//normalize
 	unsigned long intSum = 0;
 	int reserve = 0;
-	for (int i = 1; i < vertexCount; i++){
-		randomInput[i] = static_cast<T> ((randomInput[i] + coefficient / 2) / coefficient);
+	for (int i = 0; i < vertexCount; i++){
+		randomInput[i] = static_cast<T> (randomInput[i] / coefficient);
 		if (randomInput[i] == 0){
 			randomInput[i] = 1;
 			reserve++;
@@ -38,14 +38,15 @@ int* generateQuota(int vertexCount, int totalCount) {
 		intSum += randomInput[i];
 	}
 
-	int remains = totalCount - intSum;
-	if (randomInput[0] <= 0){
+	long remains = totalCount - intSum;
+	if (remains <= 0){
 		cout << "Invalid sample generated \n";
 		breakPoint();
 	}
 
 	for (int i = 0; i < remains; i++) {
-		randomInput[rand() % vertexCount]++;
+		int pos = rand() % vertexCount;
+		randomInput[pos]++;
 	}
 		
 	return randomInput;

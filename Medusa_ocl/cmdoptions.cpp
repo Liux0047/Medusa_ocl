@@ -48,7 +48,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
 		"edge_count",
 		"<integer>",
 		"Number of edges.",
-		8000000
+		64000000
 	),
     iterations(
         *this,
@@ -59,7 +59,7 @@ CmdParserMedusa::CmdParserMedusa (int argc, const char** argv) :
             "performance information will be printed. "
             "Zero is allowed: in this case no kernel invocation "
             " is performed but all other host stuff is created.",
-        1
+        100
     ),
     arithmetic(
         *this,
