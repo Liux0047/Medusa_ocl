@@ -50,19 +50,19 @@ __kernel void send_msg (
 )
 {
 	int id = get_global_id(0);
-		
+	
 	T msg = (rank_list[id] + edge_count[id]/2) / edge_count[id];	//round to nearest integer
 
 	//broadcast to all out edges
-	//edge list stored in CAA format	
+	//edge list stored in CAA format		
 	int edge_id = id;
-	
+		
 	while (edge_offset_list[edge_id] != -1) { 
 		edge_msg_list[edge_id] = msg;
 		edge_id += edge_offset_list[edge_id];
-	} 	
-	edge_msg_list[edge_id] = msg;
+	} 
 	
+	edge_msg_list[edge_id] = msg;	
 	
 }
 
@@ -77,8 +77,6 @@ __kernel void combine (
 	global T *rank_list_output
 )
 {	
-
-
 	int id = get_global_id(0);
 	
 	int edge_id = id;
@@ -95,7 +93,5 @@ __kernel void combine (
 		edge_id += edge_offset_list[edge_id];
 	};
 	atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
-	
-
 	
 }

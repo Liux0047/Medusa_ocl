@@ -63,7 +63,6 @@ void constructData(
 
 	int *quota = generateQuota<T>(vertexCount, edgeCount);
 	unsigned long cellCount = 0;	//visualize in a matrix, number of cells that has been traversed
-	//bool duplicate = true;
 	int head = 0;
 	for (size_t i = 0; i < edgeCount; ++i)
 	{
@@ -76,26 +75,7 @@ void constructData(
 				// avoids self pointing edges
 				tail = rand() % vertexCount;
 			} while (tail == head);
-
-			/*
-			do {
-				//generate a tail
-
-				duplicate = false;
-				int edgeId = head;
-				while (edgeArray.offset[edgeId] <= vertexCount){
-					if (tail == edgeArray.tail_vertex[edgeId]){
-						duplicate = true;
-						break;
-					}
-					if (edgeArray.offset[edgeId] == 0) {
-						break;
-					}
-					edgeId += edgeArray.offset[edgeId];
-				}
-			} while (duplicate);
-			*/
-
+			
 			edgeArray.tail_vertex[i] = tail;
 			vertexArray.edge_count[head]++;
 

@@ -3,11 +3,8 @@
 
 
 struct VertexArrayAA {
-
 	int *level;
-
 	int *edge_count;
-
 	unsigned long *start;
 };
 

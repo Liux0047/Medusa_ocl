@@ -6,9 +6,7 @@
 // using column-major adjacency array
 struct EdgeArray {
 	int *head_vertex;
-
 	int *tail_vertex;
-
 	int *offset;	// the number of elements down the array with the same head vertex; -1 for end
 };
 

@@ -34,7 +34,7 @@
 #include "basic.hpp"
 #include "cmdoptions.hpp"
 #include "oclobject.hpp"
-#include "pagerank_aos.hpp"
+#include "pagerank_aa.hpp"
 
 
 using namespace std;

@@ -5,9 +5,7 @@
 // using column-major adjacency array
 struct EdgeArrayAA {
 	int *head_vertex;
-
 	int *tail_vertex;
-
 };
 
 #endif  // EDGE_H_

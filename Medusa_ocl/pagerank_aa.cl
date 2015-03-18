@@ -58,9 +58,6 @@ __kernel void send_msg (
 	for (int edge_local_index = 0; edge_local_index < edge_count[id]; edge_local_index++){
 		edge_msg_list[edge_start_pos[id] + edge_local_index] = msg;
 	}
-
-		
-	
 }
 
 
@@ -84,6 +81,5 @@ __kernel void combine (
 		int edge_id = edge_start_pos[id] + edge_local_index;
 		atomic_add(&rank_list_output[ tail_vertex[edge_id] ], edge_msg_list[edge_id]);
 	}
-	
 	
 }

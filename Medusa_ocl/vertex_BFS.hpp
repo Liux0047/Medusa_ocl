@@ -3,9 +3,7 @@
 
 
 struct VertexArray {
-
 	int *level;
-
 	int *edge_count;
 };
 

@@ -48,8 +48,7 @@ __kernel void traverse (
 	int super_step,
 	global bool *halt
 )
-{	
-	
+{		
 	int id = get_global_id(0);
 
 	int head_vertex_id = head_vertex[id];
@@ -62,7 +61,5 @@ __kernel void traverse (
 			level_list[tail_vertex_id] = super_step + 1;
 			*halt = false;
 		}
-	}
-
-	
+	}	
 }

@@ -8,9 +8,7 @@
 // using column-major adjacency array
 struct EdgeAOS {
 	cl_int head_vertex;
-
 	cl_int tail_vertex;
-
 	cl_int offset;	// the number of elements down the array with the same head vertex; -1 for end
 };
 

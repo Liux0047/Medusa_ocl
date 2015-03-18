@@ -258,7 +258,7 @@ void medusa(
 			NULL,
 			0, 0, 0
 			);
-
+				
 		err = clEnqueueNDRangeKernel(
 			oclobjects.queue,
 			combineKernel.kernel,
@@ -268,12 +268,12 @@ void medusa(
 			NULL,
 			0, 0, 0
 			);
-
+			
 		
 
 		err = clFinish(oclobjects.queue);
 		SAMPLE_CHECK_ERRORS(err);
-
+		
 
 	}
 	// It is important to measure end host time after clFinish call
